@@ -4,7 +4,7 @@ import argparse,json,webbrowser,threading,time,mimetypes,os,sys
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlparse
-from .core.regression import RegressionExperiment,compare
+from .core.regression import RegressionExperiment
 from .core.labs import run_lab
 
 STATIC=Path(__file__).resolve().parent/'static'
@@ -26,12 +26,11 @@ class Controller:
             if path=='/api/seek':return self.experiment.seek(body.get('step',0))
             if path=='/api/set':return self.experiment.set_params(body or {})
             if path=='/api/surface':return {'surface':self.experiment.surface()}
-            if path=='/api/compare':return compare({**self.experiment.cfg,**body.get('config',{})},body.get('names',['sgd','momentum','rmsprop','adam','adamw']),body.get('steps',90))
             if path=='/api/save':return self.experiment.export()
             if path=='/api/load':
                 self.experiment=RegressionExperiment.load(body);return self.experiment.state(with_surface=True)
             if path=='/api/lab':return run_lab(body.get('name','math'),body.get('config',{}))
-            if path=='/api/health':return {'ok':True,'version':'0.8.0','offline':True,'platform':sys.platform}
+            if path=='/api/health':return {'ok':True,'version':'0.8.2','offline':True,'platform':sys.platform}
             raise ValueError('Неизвестная операция')
 
 class Handler(BaseHTTPRequestHandler):
@@ -46,7 +45,7 @@ class Handler(BaseHTTPRequestHandler):
         return host in ('127.0.0.1','localhost')
     def do_POST(self):
         if not self.host_is_local():self.send_error(403);return
-        if self.path not in ('/api/import_csv','/api/init','/api/state','/api/step','/api/run','/api/seek','/api/set','/api/surface','/api/compare','/api/save','/api/load','/api/lab','/api/health'):
+        if self.path not in ('/api/import_csv','/api/init','/api/state','/api/step','/api/run','/api/seek','/api/set','/api/surface','/api/save','/api/load','/api/lab','/api/health'):
             self.respond(404,{'error':'Неизвестный endpoint'});return
         if self.headers.get('Content-Type','').split(';')[0].strip()!='application/json':self.respond(415,{'error':'Требуется application/json'});return
         try:
@@ -61,7 +60,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.host_is_local():self.send_error(403);return
         path=urlparse(self.path).path
-        if path=='/api/health':self.respond(200,{'ok':True,'version':'0.8.0'});return
+        if path=='/api/health':self.respond(200,{'ok':True,'version':'0.8.2'});return
         target=(STATIC/('index.html' if path=='/' else path.lstrip('/'))).resolve()
         if not target.is_relative_to(STATIC.resolve()):self.send_error(404);return
         if target.name == 'plotly.min.js' and not target.is_file():

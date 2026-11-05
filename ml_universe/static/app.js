@@ -71,7 +71,7 @@ const t=(key,label,value,group='НАСТРОЙКИ',rows=2)=>({key,label,value,g
 const b=(key,label,value,group='НАСТРОЙКИ')=>({key,label,value,group,type:'boolean'});
 const SCHEMAS={
  regression:[
-  s('optimizer','Оптимизатор',CHOICES.optimizer,'adam','Обучение'),s('sampling','Выбор batch',CHOICES.sampling,'mini','Обучение'),
+  s('optimizer','Оптимизатор',CHOICES.optimizer,'sgd','Обучение'),s('sampling','Выбор batch',CHOICES.sampling,'full','Обучение'),
   r('lr','Learning rate η',.0001,.5,.0001,.065,'Обучение'),r('batch','Batch size',1,140,1,16,'Обучение'),
   r('w','Weight w',-9,9,.05,-2.5,'Модель'),r('b','Bias b',-9,9,.05,-3,'Модель'),
   s('loss','Loss',CHOICES.loss,'mse','Loss и штраф'),s('weight_mode','Веса Weighted MSE',CHOICES.weight_mode,'uniform','Loss и штраф'),
@@ -112,10 +112,106 @@ const SCHEMAS={
  norms:[r('w1','Weight w₁',-3,3,.1,1),r('w2','Weight w₂',-3,3,.1,1),r('lam','Lambda λ',0,5,.05,1)],
  information:[r('p','P(event)',.01,.99,.01,.3),r('q','Q(event)',.01,.99,.01,.65)]
 };
-SCHEMAS.trees=[s('algorithm','Алгоритм',[['tree','Decision Tree']],'tree'),...SCHEMAS.classification.filter(x=>x.key!=='algorithm')];
-SCHEMAS.ensembles=[s('algorithm','Алгоритм',[['forest','Random Forest'],['boosting','Gradient Boosting']],'forest'),...SCHEMAS.classification.filter(x=>x.key!=='algorithm')];
+SCHEMAS.trees=[s('algorithm','Алгоритм',[['tree','Decision Tree']],'tree'),...['dataset','depth','criterion','min_leaf','n','noise','seed'].map(k=>SCHEMAS.classification.find(x=>x.key===k))];
+SCHEMAS.ensembles=[s('algorithm','Алгоритм',[['forest','Random Forest'],['boosting','Gradient Boosting']],'forest'),...['dataset','depth','trees','lr','n','noise','seed'].map(k=>SCHEMAS.classification.find(x=>x.key===k))];
+// Progressive disclosure for every topic: core concepts first, advanced modules only on request.
+// Every schema key must belong to exactly one group; values remain in cfg even if hidden.
+const PARAM_LAYOUT={
+ regression:{core:['w','b','lr'],modules:[
+  ['optimizer','Оптимизатор',['optimizer','sampling','batch','momentum','beta1','beta2','rho','weight_decay','clip']],
+  ['loss','Функция потерь',['loss','weight_mode','delta','quantile']],
+  ['regularization','Регуляризация',['regularizer','lam','ratio']],
+  ['schedule','Расписание learning rate',['scheduler']],
+  ['dataset','Генератор данных',['n','true_w','true_b','noise','outliers','seed']]]},
+ losses:{core:['residual'],modules:[['loss_settings','Форма функции потерь',['delta','quantile']]]},
+ regularization_path:{core:['kind'],modules:[['path','Параметры регуляризации',['ratio','seed']]]},
+ optimizer_gallery:{core:['function'],modules:[
+  ['scenario','Сценарий сравнения',['arena_mode','expression','radius']],
+  ['training','Шаги оптимизации',['lr','steps']],['start','Стартовая точка',['x0','y0']]]},
+ schedulers:{core:['lr'],modules:[['scheduler_settings','Параметры расписания',['steps','warmup']]]},
+ sweep:{core:['optimizer'],modules:[['sweep_config','Параметры поиска',['steps','seed']]]},
+ classification:{core:['algorithm','dataset'],modules:[
+  ['decision','Решение и регуляризация',['threshold','C']],
+  ['model','Параметры модели',['depth','criterion','min_leaf','trees','k','gamma','kernel','lr']],
+  ['data','Генератор данных',['n','noise','seed']]]},
+ trees:{core:['algorithm','dataset'],modules:[
+  ['tree','Параметры дерева',['depth','criterion','min_leaf']],
+  ['data','Генератор данных',['n','noise','seed']]]},
+ ensembles:{core:['algorithm','dataset'],modules:[
+  ['ensemble','Настройки ансамбля',['depth','trees','lr']],
+  ['data','Генератор данных',['n','noise','seed']]]},
+ clustering:{core:['dataset','k'],modules:[
+  ['init','Инициализация центроидов',['init','seed']],['data','Данные и итерации',['n','noise','iterations']]]},
+ neuron:{core:['x1','x2'],modules:[
+  ['weights','Веса и смещение',['w1','w2','bias']],['activation','Функция активации',['activation']]]},
+ activation:{core:['activation'],modules:[['probe','Точка исследования',['at']]]},
+ neural:{core:['dataset'],modules:[
+  ['architecture','Архитектура',['hidden','activation']],['training','Обучение',['steps','lr']],
+  ['data','Данные',['n','noise','seed']]]},
+ neural_dynamics:{core:['init'],modules:[
+  ['architecture','Архитектура',['layers','width']],['dropout','Dropout',['keep']],['seed','Воспроизводимость',['seed']]]},
+ cnn:{core:['kernel'],modules:[['convolution','Параметры свёртки',['stride','padding']]]},
+ rnn:{core:['text'],modules:[['recurrent','Размерности и веса',['hidden','recurrent_scale']],['seed','Воспроизводимость',['seed']]]},
+ nlp:{core:['text'],modules:[['documents','Корпус документов',['documents']]]},
+ bpe:{core:['text'],modules:[['merges','Число слияний',['merges']]]},
+ text_classification:{core:['text'],modules:[['model','Сглаживание классификатора',['alpha']]]},
+ embeddings:{core:['text'],modules:[['context','Контекстное окно',['window','word']]]},
+ attention:{core:['text'],modules:[
+  ['shape','Размерность внимания',['d','seed']],['mask','Маска и температура',['causal','temperature']]]},
+ multihead:{core:['text'],modules:[
+  ['heads','Количество голов и размерность',['heads','d']],['mask','Causal mask',['causal']],['seed','Воспроизводимость',['seed']]]},
+ decoding:{core:['strategy'],modules:[
+  ['sampling','Сэмплирование',['temperature','top_k','top_p']],['seed','Воспроизводимость',['seed']]]},
+ rag:{core:['query'],modules:[['corpus','Поисковый корпус',['documents']],['retrieval','Количество документов',['top_k']]]},
+ bandits:{core:['epsilon'],modules:[['experiment','Количество ручек и шагов',['arms','steps']],['seed','Воспроизводимость',['seed']]]},
+ math:{core:['dimension','expression'],modules:[['domain','Область и точка',['at','xmin','xmax']]]},
+ algebra:{core:['a','b'],modules:[['matrix','Остальные элементы матрицы',['c','d']],['vector','Вектор',['x','y']]]},
+ norms:{core:['w1','w2'],modules:[['regularization','Сила штрафа',['lam']]]},
+ information:{core:['p'],modules:[['comparison','Второе распределение',['q']]]}
+};
+const activeModules=new Map();
+function modulesFor(key){return activeModules.get(key)||new Set();}
+function getLayout(key){return PARAM_LAYOUT[key]||{core:[],modules:[]};}
+function validateParameterLayouts(){for(const [key,fields] of Object.entries(SCHEMAS)){
+ const layout=getLayout(key),used=[...layout.core,...layout.modules.flatMap(m=>m[2])],expected=fields.map(f=>f.key);
+ if(used.length!==expected.length||new Set(used).size!==used.length||expected.some(k=>!used.includes(k)))throw Error('Неполная схема параметров '+key);
+}}
+validateParameterLayouts();
+function relevantField(key){
+ if(page==='regression'){
+  if(key==='batch')return cfg.sampling==='mini';
+  if(key==='momentum')return ['momentum','nesterov'].includes(cfg.optimizer);
+  if(['beta1','beta2'].includes(key))return ['adam','adamw'].includes(cfg.optimizer);
+  if(key==='rho')return cfg.optimizer==='rmsprop';
+  if(key==='weight_decay')return cfg.optimizer==='adamw';
+  if(key==='weight_mode')return cfg.loss==='weighted_mse';
+  if(key==='delta')return ['huber','smooth_l1'].includes(cfg.loss);
+  if(key==='quantile')return cfg.loss==='quantile';
+  if(key==='lam')return cfg.regularizer!=='none';
+  if(key==='ratio')return cfg.regularizer==='elastic';
+ }
+ if(['classification','trees','ensembles'].includes(page)){
+  const a=cfg.algorithm;
+  if(key==='threshold')return a!=='softmax';
+  if(key==='C')return ['logistic','softmax','svm'].includes(a);
+  if(key==='k')return a==='knn';
+  if(['kernel','gamma'].includes(key))return a==='svm';
+  if(['depth','min_leaf'].includes(key))return ['tree','forest','boosting'].includes(a);
+  if(key==='criterion')return a==='tree';
+  if(key==='trees')return ['forest','boosting'].includes(a);
+  if(key==='lr')return a==='boosting';
+ }
+ if(page==='regularization_path'&&key==='ratio')return cfg.kind==='elastic';
+ if(page==='optimizer_gallery'){
+  if(key==='expression')return cfg.function==='custom';
+  if(key==='radius')return cfg.arena_mode==='projected';
+ }
+ if(page==='schedulers'&&key==='warmup')return true;
+ if(page==='decoding'&&['temperature','top_k','top_p'].includes(key))return cfg.strategy!=='greedy';
+ return true;
+}
 const ROOT=document.documentElement;
-let page='regression',mode='explore',cfg={},reg=null,surface=null,labResult=null,playing=false,busy=false,playTimer=null,debounce=null,lastPlotTime=0,currentKey='';
+let page='regression',cfg={},reg=null,surface=null,labResult=null,playing=false,busy=false,playTimer=null,debounce=null,lastPlotTime=0,currentKey='';
 const GENERATORS=new Set(['n','true_w','true_b','noise','outliers','seed']);
 let labUpdateTimer=null,labRequestSeq=0;
 function scheduleLabUpdate(){clearTimeout(labUpdateTimer);labUpdateTimer=setTimeout(()=>runLab(),420);}
@@ -128,22 +224,66 @@ async function api(path,payload={}){const response=await fetch('/api/'+path,{met
 function heading(info){$('#breadcrumb').textContent=info[2];$('#pageTitle').textContent=info[3];$('#pageDescription').textContent=info[4];const group=NAV.find(g=>g[1].some(item=>item[0]===page));$('#sectionLabel').textContent=group?group[0].replace(/^\d+ · /,''):'';}
 function buildNav(){const nav=$('#navigation');nav.innerHTML='';for(const [group,items] of NAV){const cap=document.createElement('div');cap.className='nav-caption';cap.textContent=group;nav.appendChild(cap);for(const info of items){const item=document.createElement('button');item.className='nav-item';item.dataset.page=info[0];item.innerHTML=`<span class="nav-icon">${info[1]}</span><span>${ESC(info[2])}</span>`;item.addEventListener('click',()=>navigate(info[0]));nav.appendChild(item);}}}
 function defaults(key){return Object.fromEntries((SCHEMAS[key]||[]).map(s=>[s.key,s.value]));}
-function navigate(next){if(!allNav.some(x=>x[0]===next))return;labRequestSeq++;clearTimeout(labUpdateTimer);document.body.classList.remove('sidebar-open');stopPlay();page=next;cfg=defaults(page);if(page==='trees')cfg.algorithm='tree';if(page==='ensembles')cfg.algorithm='forest';if(page==='regression'&&reg)cfg={...cfg,...reg.config,w:reg.theta[0],b:reg.theta[1]};heading(allNav.find(x=>x[0]===page));$$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===page));showControls();$('#timelineContainer').style.display=page==='regression'?'':'none';$('#runMainButton').textContent=page==='regression'?'▶ Обучить 50 шагов':'↻ Пересчитать';$('#csvButton').style.display=page==='regression'?'':'none';$('#saveButton').style.display=page==='regression'?'':'none';$('#loadButton').style.display=page==='regression'?'':'none';$('#modeLinks').style.display=page==='regression'?'':'none';if(page==='regression'){if(reg)drawRegression();else resetRegression();}else runLab();}
+function navigate(next){if(!allNav.some(x=>x[0]===next))return;labRequestSeq++;clearTimeout(labUpdateTimer);clearTimeout(debounce);document.body.classList.remove('sidebar-open');stopPlay();page=next;cfg=defaults(page);if(page==='trees')cfg.algorithm='tree';if(page==='ensembles')cfg.algorithm='forest';if(page==='regression'&&reg)cfg={...cfg,...reg.config,w:reg.theta[0],b:reg.theta[1]};heading(allNav.find(x=>x[0]===page));$$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===page));showControls();$('#timelineContainer').style.display=page==='regression'?'':'none';if(page==='regression'){if(reg)drawRegression();else resetRegression();}else runLab();}
 function formatInput(n){if(n.type==='select')return `<select class="field config-field" data-key="${n.key}">${n.options.map(([v,k])=>`<option value="${ESC(v)}" ${String(cfg[n.key])===String(v)?'selected':''}>${ESC(k)}</option>`).join('')}</select>`;
  if(n.type==='text')return `<textarea class="field field-text config-field" data-key="${n.key}" rows="${n.rows||2}">${ESC(cfg[n.key]||'')}</textarea>`;
  if(n.type==='boolean')return `<label><input class="config-field" data-key="${n.key}" type="checkbox" ${cfg[n.key]?'checked':''}> &nbsp; Включено</label>`;
  return `<div class="control-label"><span>${ESC(n.label)}</span><input class="field field-number config-field" data-key="${n.key}" type="number" min="${n.min}" max="${n.max}" step="${n.step}" value="${ESC(cfg[n.key])}"></div><input class="slider" type="range" data-range="${n.key}" min="${n.min}" max="${n.max}" step="${n.step}" value="${ESC(cfg[n.key])}"><div class="control-range"><span>${NUM(n.min)}</span><span>${NUM(n.max)}</span></div>`;}
-function showControls(){const box=$('#parameters');box.innerHTML='';let group='';for(const n of SCHEMAS[page]){if(n.group!==group){group=n.group;box.insertAdjacentHTML('beforeend',`<div class="group-title">${ESC(group)}</div>`);}const block=document.createElement('div');block.className='control-group';block.innerHTML=(n.type==='range'?'':`<div class="control-label">${ESC(n.label)}</div>`)+formatInput(n);box.appendChild(block);}
- for(const node of $$('.config-field'))node.addEventListener(node.tagName==='TEXTAREA'||node.tagName==='SELECT'||node.type==='checkbox'?'change':'input',()=>{
-    const key=node.dataset.key;let value=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;
-    if(node.type==='number'&&!Number.isFinite(value))return;
-    cfg[key]=value;if(page==='classification'&&key==='algorithm'&&value==='softmax'){cfg.dataset='blobs';showControls();}const sibling=$(`[data-range="${key}"]`);if(sibling)sibling.value=value;
-    if(page==='regression')scheduleRegressionUpdate(key);else scheduleLabUpdate();
- });
- for(const node of $$('[data-range]'))node.addEventListener('input',()=>{const key=node.dataset.range;cfg[key]=Number(node.value);const paired=$(`.config-field[data-key="${key}"]`);if(paired)paired.value=cfg[key];if(page==='regression')scheduleRegressionUpdate(key);else scheduleLabUpdate();});
+function showControls(){
+ const host=$('#parameters'),layout=getLayout(page),active=modulesFor(page);
+ host.innerHTML='';
+ function createFields(keys,parent){for(const key of keys){
+   const item=(SCHEMAS[page]||[]).find(x=>x.key===key);
+   if(!item||!relevantField(key))continue;
+   const control=document.createElement('div');control.className='control-group';
+   control.innerHTML=(item.type==='range'?'':`<div class="control-label">${ESC(item.label)}</div>`)+formatInput(item);
+   parent.appendChild(control);
+ }}
+ const essential=document.createElement('section');essential.className='essential-fields';
+ essential.innerHTML='<div class="essentials-heading">Основное</div>';
+ createFields(layout.core,essential);host.appendChild(essential);
+ for(const [id,title,keys] of layout.modules){if(!active.has(id))continue;
+   const wrap=document.createElement('section');wrap.className='added-module';wrap.dataset.module=id;
+   const header=document.createElement('div');header.className='added-module-title';
+   const heading=document.createElement('h4');heading.textContent=title;
+   const remove=document.createElement('button');remove.type='button';remove.className='module-remove';remove.textContent='×';remove.title='Убрать блок и сбросить его параметры';remove.setAttribute('aria-label','Убрать блок '+title);
+   remove.addEventListener('click',()=>removeModule(id));header.append(heading,remove);wrap.appendChild(header);
+   const content=document.createElement('div');content.className='added-module-content';createFields(keys,content);
+   if(!content.children.length)content.innerHTML='<p class="module-hint">Для текущего алгоритма дополнительные параметры не требуются.</p>';
+   wrap.appendChild(content);host.appendChild(wrap);
+ }
+ const remaining=layout.modules.filter(m=>!active.has(m[0])&&m[2].some(relevantField));
+ const addButton=$('#addModuleButton');addButton.hidden=!remaining.length;
+ const picker=$('#modulePicker');picker.innerHTML='';picker.hidden=true;
+ for(const [id,title] of remaining){const item=document.createElement('button');item.type='button';item.className='module-choice';item.textContent='+ '+title;item.addEventListener('click',()=>{
+   activeModules.set(page,new Set([...active,id]));showControls();
+   host.querySelector(`[data-module="${id}"]`)?.scrollIntoView({block:'nearest',behavior:'smooth'});
+ });picker.appendChild(item);}
+ addButton.setAttribute('aria-expanded','false');
+ host.querySelectorAll('.config-field').forEach(node=>node.addEventListener(node.tagName==='TEXTAREA'||node.tagName==='SELECT'||node.type==='checkbox'?'change':'input',()=>{
+   const key=node.dataset.key;const value=node.type==='checkbox'?node.checked:node.type==='number'?Number(node.value):node.value;
+   if(node.type==='number'&&!Number.isFinite(value))return;
+   cfg[key]=value;
+   if(page==='classification'&&key==='algorithm'&&value==='softmax')cfg.dataset='blobs';
+   const sibling=host.querySelector(`[data-range="${key}"]`);if(sibling)sibling.value=value;
+   const dynamic=['optimizer','sampling','loss','regularizer','algorithm','kind','function','arena_mode','strategy'];
+   if(dynamic.includes(key))showControls();
+   if(page==='regression')scheduleRegressionUpdate(key);else scheduleLabUpdate();
+ }));
+ host.querySelectorAll('[data-range]').forEach(node=>node.addEventListener('input',()=>{
+   const key=node.dataset.range;cfg[key]=Number(node.value);
+   const paired=host.querySelector(`.config-field[data-key="${key}"]`);if(paired)paired.value=cfg[key];
+   if(page==='regression')scheduleRegressionUpdate(key);else scheduleLabUpdate();
+ }));
+}
+function removeModule(id){const module=getLayout(page).modules.find(m=>m[0]===id);if(!module)return;
+ clearTimeout(debounce);clearTimeout(labUpdateTimer);stopPlay();
+ const next=new Set(modulesFor(page));next.delete(id);activeModules.set(page,next);
+ const defaultsMap=defaults(page);for(const key of module[2])cfg[key]=defaultsMap[key];
+ showControls();if(page==='regression')resetRegression(true);else runLab();
 }
 function scheduleRegressionUpdate(key){clearTimeout(debounce);stopPlay();debounce=setTimeout(async()=>{try{if(GENERATORS.has(key)){await resetRegression(true)}else if(key==='w'||key==='b'){reg=await api('set',{w:cfg.w,b:cfg.b});drawRegression();}else{reg=await api('set',{[key]:cfg[key]});if(['loss','regularizer','lam','ratio','delta','quantile'].includes(key))surface=(await api('surface')).surface;drawRegression();}}catch(e){message(e.message,true)}},key==='w'||key==='b'?130:280);}
-async function resetRegression(quiet=false){try{stopPlay();setBusy(true);reg=await api('init',cfg);surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config};drawRegression();if(!quiet)message('Новый эксперимент создан');}catch(e){message(e.message,true)}finally{setBusy(false)}}
+async function resetRegression(quiet=false){try{clearTimeout(debounce);stopPlay();setBusy(true);reg=await api('init',cfg);surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config};drawRegression();if(!quiet)message('Новый эксперимент создан');}catch(e){message(e.message,true)}finally{setBusy(false)}}
 function setBusy(v){busy=v;$('#status-text').innerHTML=v?'<span class="online-dot"></span> Вычисление…':'<span class="online-dot"></span> Готово';}
 function plotTheme(){
  const light=ROOT.classList.contains('light');
@@ -154,17 +294,19 @@ function plotTheme(){
  xaxis:{gridcolor:grid,zerolinecolor:grid},yaxis:{gridcolor:grid,zerolinecolor:grid},
  legend:{orientation:'h',y:-.22,font:{size:10}},hovermode:'closest'};
 }
-function renderCharts(charts){const host=$('#graphs');if(!charts||!charts.length){host.innerHTML='<div class="empty-panel">Пока нет данных.</div>';return;}const key=page+'_'+charts.length;const recreate=currentKey!==key||$$('.chart-card').length!==charts.length;currentKey=key;if(recreate){host.innerHTML='';charts.forEach((c,i)=>{const card=document.createElement('div');card.className='chart-card'+(c.wide?' wide':'');card.innerHTML=`<div class="chart-head"><strong>${ESC(c.title||'Визуализация')}${!HAS_WEBGL&&c.traces.some(t=>t.type==='surface'||t.type==='scatter3d')?' · 2D контуры':''}</strong><span class="chart-desc">ИНТЕРАКТИВНЫЙ ГРАФИК ${String(i+1).padStart(2,'0')}</span></div><div class="chart-body" id="plot-${i}"></div>`;host.appendChild(card);});}
- const theme=plotTheme();const time=performance.now();charts.forEach((c,i)=>{const original3d=c.traces.some(t=>t.type==='surface'||t.type==='scatter3d');
+function renderCharts(charts){const host=$('#graphs');if(!charts||!charts.length){host.innerHTML='<div class="empty-panel">Пока нет данных.</div>';return;}const key=page+'_'+charts.length;const recreate=currentKey!==key||$$('.chart-card').length!==charts.length;currentKey=key;if(recreate){host.innerHTML='';charts.forEach((c,i)=>{const card=document.createElement('div');card.className='chart-card'+(c.wide?' wide':'');card.innerHTML=`<div class="chart-head"><strong>${ESC(c.title||'Визуализация')}${!HAS_WEBGL&&c.traces.some(t=>t.type==='surface'||t.type==='scatter3d')?' · 2D контуры':''}</strong></div><div class="chart-body" id="plot-${i}"></div>`;host.appendChild(card);});}
+ const theme=plotTheme();charts.forEach((c,i)=>{const original3d=c.traces.some(t=>t.type==='surface'||t.type==='scatter3d');
   let traces=c.traces;
   if(original3d&&!HAS_WEBGL)traces=traces.map(t=>t.type==='surface'?{type:'contour',x:t.x,y:t.y,z:t.z,colorscale:t.colorscale||'Viridis',showscale:false,opacity:t.opacity||1,ncontours:22}:t.type==='scatter3d'?{type:'scatter',x:t.x,y:t.y,mode:t.mode||'lines',name:t.name,line:t.line||{},marker:{...t.marker,size:Math.max(5,t.marker?.size||5)}}:t);
   // Calm sequential scale for loss surfaces; preserve diverging scales for signed kernels.
   const calm=ROOT.classList.contains('light')?[[0,'#f0f4f4'],[.5,'#9abfba'],[1,'#316b66']]:[[0,'#263a39'],[.5,'#4f817a'],[1,'#a7c8b9']];
   traces=traces.map(t=>t.colorscale==='Viridis'?{...t,colorscale:calm}:t);
   const target=$(`#plot-${i}`),layout={...theme,...c.layout,margin:{l:48,r:12,t:18,b:48},height:target?.clientHeight||340,autosize:true};if(layout.xaxis)layout.xaxis={...theme.xaxis,...layout.xaxis};if(layout.yaxis)layout.yaxis={...theme.yaxis,...layout.yaxis};if(original3d&&HAS_WEBGL){layout.scene={xaxis:{title:'x'},yaxis:{title:'y'},zaxis:{title:'Objective'},bgcolor:'rgba(0,0,0,0)',...layout.scene};delete layout.xaxis;delete layout.yaxis;layout.margin={l:0,r:0,t:0,b:0};}
-   Plotly.react(target,traces,layout,{responsive:true,displaylogo:false,scrollZoom:true,modeBarButtonsToRemove:['sendDataToCloud'],toImageButtonOptions:{format:'png',filename:'ML_Universe_'+page,scale:2}}).catch(e=>message('Ошибка графика: '+e.message,true));});
- $('#renderTime').textContent='Визуализация: '+(performance.now()-time).toFixed(0)+' мс';}
-function setStats(items){let stats=Object.entries(items||{}).filter(([,v])=>typeof v==='number'||typeof v==='string');stats=stats.slice(0,8);if(!stats.length){$('#statsStrip').innerHTML='';return;}$('#statsStrip').innerHTML=stats.slice(0,4).map(([name,value])=>`<div class="stat-card"><div class="stat-label">${ESC(name.replaceAll('_',' ').toUpperCase())}</div><div class="stat-value" title="${ESC(valueLabel(value))}">${ESC(typeof value==='number'?NUM(value):value)}</div><div class="stat-small">Текущее вычисление <span class="stat-indicator">● LIVE</span></div></div>`).join('');}
+   // Focus on learning: only zoom and reset, without screenshot/export, lasso or 3D gimmicks.
+   const buttons=original3d&&HAS_WEBGL?['zoom3d','resetCameraDefault3d']:['zoomIn2d','zoomOut2d','resetScale2d'];
+   Plotly.react(target,traces,layout,{responsive:true,displaylogo:false,displayModeBar:'hover',scrollZoom:true,doubleClick:'reset',modeBarButtons:[buttons]}).catch(e=>message('Ошибка графика: '+e.message,true));});
+}
+function setStats(items){let stats=Object.entries(items||{}).filter(([,v])=>typeof v==='number'||typeof v==='string');stats=stats.slice(0,8);if(!stats.length){$('#statsStrip').innerHTML='';return;}$('#statsStrip').innerHTML=stats.slice(0,4).map(([name,value])=>`<div class="stat-card"><div class="stat-label">${ESC(name.replaceAll('_',' ').toUpperCase())}</div><div class="stat-value" title="${ESC(valueLabel(value))}">${ESC(typeof value==='number'?NUM(value):value)}</div></div>`).join('');}
 function kvHtml(items){return Object.entries(items).slice(0,24).map(([k,v])=>`<div class="keyval"><span>${ESC(k.replaceAll('_',' '))}</span><strong>${ESC(valueLabel(v))}</strong></div>`).join('');}
 function setExplanation(html){$('#explanation').innerHTML=html;}
 function drawRegression(){if(!reg)return;const h=reg.history,last=reg.current,x=reg.x,y=reg.y,p=reg.prediction,w=reg.theta[0],b=reg.theta[1];const coords=h.map(q=>q.w),bias=h.map(q=>q.b),losses=h.map(q=>q.loss);const currentG=last.gradient;
@@ -186,7 +328,7 @@ function drawRegression(){if(!reg)return;const h=reg.history,last=reg.current,x=
  if(d.velocity)html+='<div class="group-title">MOMENTUM</div>'+kvHtml({Velocity:d.velocity});
  if(d.second_moment&&!d.m_hat)html+='<div class="group-title">RMSPROP</div>'+kvHtml({EMA_squared:d.second_moment});
  $('#inspector').innerHTML=html;
- setExplanation(mode==='challenge'?`<b>Задание:</b> добейтесь Loss &lt; 0.5, подбирая learning rate и оптимизатор. <div class="formula">Текущий Loss = ${NUM(last.loss)} → ${last.loss<.5?'✓ Цель достигнута':'● Продолжайте эксперимент'}</div>`:mode==='learn'?'<b>Как читать графики?</b> Вверху слева исходные наблюдения, текущая прямая и ошибки. Вверху справа 3D-поверхность функции L(w,b). Внизу — контуры и настоящая история оптимизации. Измените η, алгоритм или регуляризатор.':'<b>Линейная регрессия:</b> ŷ = wx + b. Данные и штраф суммируются в objective. Градиент вычисляется аналитически по каждому batch. Воспроизведение сохраняет состояния и seed. L1 в точке нуля использует субградиент 0; AdamW реализует отдельный decoupled decay.');
+ setExplanation('<b>Линейная регрессия:</b> ŷ = wx + b. Вверху показаны наблюдения и 3D-поверхность L(w, b); ниже — контуры и фактическая история шагов. Меняйте параметры справа, а затем используйте кнопки истории для пошагового обучения. Раскройте математический инспектор для градиентов и состояний оптимизатора.');
  $('#timelineRange').max=h[h.length-1].step;$('#timelineRange').min=h[0].step;$('#timelineRange').value=reg.steps;$('#timelineStep').textContent='Шаг '+reg.steps;$('#timelineLoss').textContent='Loss '+NUM(last.loss);
 }
 async function stepRegression(){if(busy)return;try{setBusy(true);reg=await api('step');drawRegression()}catch(e){stopPlay();message(e.message,true)}finally{setBusy(false)}}
@@ -194,17 +336,11 @@ async function runRegression(n){if(busy)return;try{setBusy(true);reg=await api('
 async function seek(step){if(busy)return;try{setBusy(true);reg=await api('seek',{step});drawRegression()}catch(e){message(e.message,true)}finally{setBusy(false)}}
 function stopPlay(){playing=false;clearInterval(playTimer);playTimer=null;$('#toPlay').textContent='▶'}
 function togglePlay(){if(playing){stopPlay();return}playing=true;$('#toPlay').textContent='Ⅱ';playTimer=setInterval(()=>{if(!busy)stepRegression()},330)}
-async function compareRegression(){if(!reg)return;setBusy(true);try{const d=await api('compare',{steps:100,names:['sgd','momentum','rmsprop','adam','adamw','adagrad']});const colors=['#0d9488','#8b82a3','#b88e61','#648b7a','#b77983','#7d8fa6'];const lines=d.runs.map((q,i)=>({type:'scatter',mode:'lines',name:q.name,x:q.history.map(h=>h.step),y:q.history.map(h=>h.loss),line:{color:colors[i],width:2}}));const tracks=d.runs.map((q,i)=>({type:'scatter',mode:'lines+markers',name:q.name,x:q.history.map(h=>h.w),y:q.history.map(h=>h.b),line:{color:colors[i],width:2},marker:{size:3}}));const contours=surface?[{type:'contour',x:surface.w,y:surface.b,z:surface.z,colorscale:'Viridis',ncontours:25,showscale:false}]:[];const stats=Object.fromEntries(d.runs.slice(0,4).map(q=>[q.name+'_loss',q.final.loss]));setStats(stats);renderCharts([{title:'Optimizer Arena · траектории',traces:[...contours,...tracks],layout:{xaxis:{title:'Weight w'},yaxis:{title:'Bias b'}}},{title:'Функции потерь по шагам',traces:lines,layout:{xaxis:{title:'Шаг'},yaxis:{title:'Total Objective'}}}]);$('#inspector').innerHTML=kvHtml(Object.fromEntries(d.runs.map(q=>[q.name+' · final loss',q.final.loss])))+'<div class="formula">Одна и та же функция, датасет и инициализация; разные правила обновления.</div>';setExplanation('Алгоритмы сравниваются на одинаковых данных и начальных весах. Learning rate общий, поэтому сравнение показывает поведение при этой конкретной настройке, а не универсального победителя. Вернитесь к экспериментам для продолжения основного run.');message('Сравнение шести оптимизаторов готово');}catch(e){message(e.message,true)}finally{setBusy(false)}}
 function labName(){return ['trees','ensembles'].includes(page)?'classification':page;}
 async function runLab(){const requestId=++labRequestSeq;const requestedPage=page;try{setBusy(true);const payload={...cfg};if(page==='optimizer_gallery'){payload.optimizers=cfg.arena_mode==='projected'?['sgd','projected']:cfg.arena_mode==='adaptive'?['adagrad','rmsprop','adam','adamw']:['sgd','momentum','nesterov','adagrad','rmsprop','adam','adamw'];}const results=await api('lab',{name:labName(),config:payload});if(requestId!==labRequestSeq||requestedPage!==page)return;labResult=results;setStats(results.stats);renderCharts(results.charts);const extra=Object.entries(results.details||{}).slice(0,10).map(([k,v])=>`<details class="detail-fold"><summary>${ESC(k.replaceAll('_',' '))}</summary><pre class="formula">${ESC(JSON.stringify(v,null,2).slice(0,5000))}</pre></details>`).join('');
  $('#inspector').innerHTML=kvHtml(results.stats)+extra+(results.table?.length?`<div class="group-title">ТАБЛИЦА РАСЧЁТОВ</div><div style="overflow:auto;max-height:260px"><table class="data-table"><thead><tr>${Object.keys(results.table[0]).map(k=>`<th>${ESC(k)}</th>`).join('')}</tr></thead><tbody>${results.table.slice(0,28).map(row=>`<tr>${Object.values(row).map(v=>`<td>${ESC(valueLabel(v))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'');setExplanation('<b>Как устроено вычисление:</b> '+ESC(results.explain));}catch(e){if(requestId===labRequestSeq){message(e.message,true);$('#inspector').textContent='Ошибка: '+e.message}}finally{if(requestId===labRequestSeq)setBusy(false)}}
-function saveFile(name,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
-async function saveExperiment(){try{const data=await api('save');saveFile('ML_Universe_Experiment.mluniverse',data);message('Эксперимент сохранён')}catch(e){message(e.message,true)}}
-async function loadCsv(file){if(!file)return;try{const raw=await file.text();const delimiter=raw.includes(';')?';':raw.includes('\t')?'\t':',';const lines=raw.trim().split(/\r?\n/).filter(Boolean);const coords=[];for(let i=0;i<Math.min(lines.length,601);i++){const cells=lines[i].split(delimiter);if(cells.length<2)continue;const x=Number(cells[0].trim().replace(',','.')),y=Number(cells[1].trim().replace(',','.'));if(Number.isFinite(x)&&Number.isFinite(y)&&cells[0].trim()!==''&&cells[1].trim()!=='')coords.push([x,y]);}if(coords.length<4||coords.length>600)throw Error('CSV должен содержать 4–600 числовых строк с колонками x и y.');stopPlay();setBusy(true);reg=await api('import_csv',{config:cfg,x:coords.map(v=>v[0]),y:coords.map(v=>v[1])});surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config};showControls();drawRegression();message('Импортировано '+coords.length+' точек из CSV');}catch(e){message('Ошибка CSV: '+e.message,true)}finally{setBusy(false)}}
-async function loadExperiment(file){if(!file)return;try{const text=await file.text();reg=await api('load',JSON.parse(text));surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config,w:reg.theta[0],b:reg.theta[1]};showControls();drawRegression();message('Эксперимент восстановлен');}catch(e){message('Ошибка импорта: '+e.message,true)}}
-function changeMode(next){mode=next;$$('.mode').forEach(v=>v.classList.toggle('active',v.dataset.mode===next));$('#modeHint').textContent={explore:'Изменяйте параметры и наблюдайте',learn:'Объяснение каждого механизма',debug:'Пошаговый отладчик состояния',compare:'Сопоставление алгоритмов',challenge:'Достигните целевого loss'}[next];if(page==='regression'){if(next==='compare')compareRegression();else drawRegression()}}
 function loadTheme(){try{return localStorage.getItem('ml-universe-theme')}catch(_){return null}}
 function saveTheme(theme){try{localStorage.setItem('ml-universe-theme',theme)}catch(_){/* private/opaque origin */}}
 function updateThemeIcon(){const light=ROOT.classList.contains('light');$('#themeButton').textContent=light?'☾':'☼';$('#themeButton').title=light?'Включить тёмную тему':'Включить светлую тему'}
-function wire(){ROOT.classList.toggle('light',loadTheme()!=='dark');updateThemeIcon();buildNav();$('#applyButton').onclick=()=>page==='regression'?resetRegression():runLab();$('#resetButton').onclick=()=>{cfg=defaults(page);if(page==='trees')cfg.algorithm='tree';if(page==='ensembles')cfg.algorithm='forest';showControls();page==='regression'?resetRegression():runLab()};$('#runMainButton').onclick=()=>page==='regression'?runRegression(50):runLab();$('#toStep').onclick=()=>stepRegression();$('#toBack').onclick=()=>seek(Math.max(0,reg.steps-1));$('#toStart').onclick=()=>seek(0);$('#toPlay').onclick=togglePlay;$('#run25').onclick=()=>runRegression(25);$('#run100').onclick=()=>runRegression(100);$('#timelineRange').addEventListener('change',e=>seek(Number(e.target.value)));$('#csvButton').onclick=()=>$('#csvInput').click();$('#csvInput').onchange=e=>loadCsv(e.target.files[0]);$('#saveButton').onclick=saveExperiment;$('#loadButton').onclick=()=>$('#loadInput').click();$('#loadInput').onchange=e=>loadExperiment(e.target.files[0]);$$('.mode').forEach(v=>v.onclick=()=>changeMode(v.dataset.mode));$('#themeButton').onclick=()=>{ROOT.classList.toggle('light');saveTheme(ROOT.classList.contains('light')?'light':'dark');updateThemeIcon();if(page==='regression')drawRegression();else if(labResult)renderCharts(labResult.charts);};$('#helpButton').onclick=()=>$('#modal').classList.remove('hidden');$('#closeModal').onclick=()=>$('#modal').classList.add('hidden');$('#modal').onclick=e=>{if(e.target===$('#modal'))$('#modal').classList.add('hidden')};window.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#modal').classList.add('hidden');stopPlay()}if(e.key===' '&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&page==='regression'){e.preventDefault();togglePlay()}});window.addEventListener('resize',()=>{$$('.chart-body').forEach(n=>{if(n.data)Plotly.Plots.resize(n)})});$('#sidebarToggle').onclick=()=>document.body.classList.toggle('sidebar-open');navigate('regression');}
+function wire(){ROOT.classList.toggle('light',loadTheme()!=='dark');updateThemeIcon();buildNav();$('#resetButton').onclick=()=>{clearTimeout(debounce);clearTimeout(labUpdateTimer);activeModules.delete(page);cfg=defaults(page);if(page==='trees')cfg.algorithm='tree';if(page==='ensembles')cfg.algorithm='forest';showControls();page==='regression'?resetRegression():runLab()};$('#toStep').onclick=()=>stepRegression();$('#toBack').onclick=()=>seek(Math.max(0,reg.steps-1));$('#toPlay').onclick=togglePlay;$('#run25').onclick=()=>runRegression(25);$('#timelineRange').addEventListener('change',e=>seek(Number(e.target.value)));$('#themeButton').onclick=()=>{ROOT.classList.toggle('light');saveTheme(ROOT.classList.contains('light')?'light':'dark');updateThemeIcon();if(page==='regression')drawRegression();else if(labResult)renderCharts(labResult.charts);};$('#addModuleButton').onclick=()=>{const picker=$('#modulePicker');picker.hidden=!picker.hidden;$('#addModuleButton').setAttribute('aria-expanded',String(!picker.hidden));};$('#helpButton').onclick=()=>$('#modal').classList.remove('hidden');$('#closeModal').onclick=()=>$('#modal').classList.add('hidden');$('#modal').onclick=e=>{if(e.target===$('#modal'))$('#modal').classList.add('hidden')};window.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#modal').classList.add('hidden');stopPlay()}if(e.key===' '&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&page==='regression'){e.preventDefault();togglePlay()}});window.addEventListener('resize',()=>{$$('.chart-body').forEach(n=>{if(n.data)Plotly.Plots.resize(n)})});$('#sidebarToggle').onclick=()=>document.body.classList.toggle('sidebar-open');navigate('regression');}
 wire();
