@@ -4,7 +4,7 @@
 
 ## Входящий в scope функционал
 
-**Регрессия и оптимизация:** `ŷ = wx+b`, residuals, MSE, SSE, RMSE, MAE, Huber, Smooth L1, Log-Cosh, Quantile, Weighted MSE (3 вида весов наблюдений), L1/L2/ElasticNet, Ridge/Lasso/ElasticNet regularization path, GD/SGD/Mini-batch, Momentum, Nesterov, AdaGrad, RMSProp, Adam, AdamW, LR schedulers, 25-точечный grid sweep, Projected GD (на L2-шар), Optimizer Arena, 2D/3D loss surface, history/replay, CSV и сохранение эксперимента.
+**Регрессия и оптимизация:** `ŷ = wx+b`, residuals, MSE, SSE, RMSE, MAE, Huber, Smooth L1, Log-Cosh, Quantile, Weighted MSE (3 вида весов наблюдений), L1/L2/ElasticNet, Ridge/Lasso/ElasticNet regularization path, GD/SGD/Mini-batch, Momentum, Nesterov, AdaGrad, RMSProp, Adam, AdamW, LR schedulers, 25-точечный grid sweep, Projected GD (на L2-шар), Optimizer Arena, 2D/3D loss surface, history/replay. Программный API импорта CSV и сохранения остался для совместимости, но файловые кнопки удалены из учебного UI.
 
 **Классификация:** Logistic Regression, Softmax Regression (3 класса, Gaussian Blobs), линейный/kernel SVM, kNN, Gaussian Naive Bayes, дерево и критерии split, Random Forest, Gradient Boosting, ROC, PR, confusion matrix и метрики. Модели scikit-learn; показатели на учебной выборке, не независимый тест качества обобщения.
 
