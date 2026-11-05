@@ -31,7 +31,7 @@ class Controller:
             if path=='/api/load':
                 self.experiment=RegressionExperiment.load(body);return self.experiment.state(with_surface=True)
             if path=='/api/lab':return run_lab(body.get('name','math'),body.get('config',{}))
-            if path=='/api/health':return {'ok':True,'version':'0.7.0','offline':True,'platform':sys.platform}
+            if path=='/api/health':return {'ok':True,'version':'0.8.0','offline':True,'platform':sys.platform}
             raise ValueError('Неизвестная операция')
 
 class Handler(BaseHTTPRequestHandler):
@@ -61,7 +61,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.host_is_local():self.send_error(403);return
         path=urlparse(self.path).path
-        if path=='/api/health':self.respond(200,{'ok':True,'version':'0.7.0'});return
+        if path=='/api/health':self.respond(200,{'ok':True,'version':'0.8.0'});return
         target=(STATIC/('index.html' if path=='/' else path.lstrip('/'))).resolve()
         if not target.is_relative_to(STATIC.resolve()):self.send_error(404);return
         if target.name == 'plotly.min.js' and not target.is_file():
@@ -92,7 +92,7 @@ def main():
         if not args.browser:
             try:
                 import webview
-                webview.create_window('ML Universe — Interactive ML Laboratory',url,width=1500,height=900,min_size=(1100,700),background_color='#0c1120')
+                webview.create_window('ML Universe — Interactive ML Laboratory',url,width=1500,height=900,min_size=(1100,700),background_color='#212121')
                 webview.start(debug=False)
                 httpd.shutdown();httpd.server_close();return
             except Exception as exc:

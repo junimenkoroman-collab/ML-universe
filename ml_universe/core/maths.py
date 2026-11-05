@@ -51,6 +51,9 @@ def loss_and_grad(y,p,kind='mse',delta=1.,quantile=.5,weights=None):
     if kind=='mae':return float(np.mean(abs(r))),np.sign(r)/n
     if kind=='rmse':v=float(np.sqrt(np.mean(r*r)));return v,r/(n*max(v,1e-12))
     if kind=='huber':d=max(float(delta),1e-9);a=abs(r);return float(np.mean(np.where(a<=d,.5*r*r,d*(a-.5*d)))),np.clip(r,-d,d)/n
+    if kind=='smooth_l1':
+        d=max(float(delta),1e-9);a=abs(r)
+        return float(np.mean(np.where(a<d,.5*r*r/d,a-.5*d))),np.where(a<d,r/d,np.sign(r))/n
     if kind=='logcosh':return float(np.mean(np.logaddexp(r,-r)-np.log(2))),np.tanh(r)/n
     if kind=='quantile':q=np.clip(float(quantile),.001,.999);t=y-p;return float(np.mean(np.maximum(q*t,(q-1)*t))),np.where(t>0,-q,1-q)/n
     if kind=='weighted_mse':

@@ -1,17 +1,17 @@
-# Результат тестирования UI (2026-11-04)
+# Проверка интерфейса ML Universe v0.8
 
-Использован Chromium с программной подачей тех же JSON-данных из реального локального Python controller. Такой способ тестирует живой Plotly/HTML/JS интерфейс без выхода в сеть; в данной среде прямое открытие локального `http://127.0.0.1` в Chromium запрещено административными политиками браузера, поэтому для UI-теста запросы были перенаправлены к контроллеру через Playwright binding.
+Проверены: **29 пунктов меню** в Chromium с встроенными ресурсами HTML/CSS/JS, локальным Plotly и API-ответами настоящего Python Controller. Это UI integration smoke test с in-memory API transport, а не внешнее E2E в публичном интернете.
 
-- **34 из 34** элементов навигации открылись и отрисовали хотя бы один график.
-- Все страницы сделали вычисления Python-модулей и вернули данные для графиков.
-- JavaScript pageerror: **0**.
-- Ошибки интерфейса при проходе по 34 лабораториям: **0**.
-- Regression Play/Run: за 25 шагов loss перешёл примерно от 89.5802 к 43.2852 при данной конфигурации.
-- Optimizer Comparison: отрисованы графики путей и objective.
-- Self-Attention: 4 интерактивных графика, матрицы считаются.
-- В тестовом Chromium WebGL отключён — проверено честное переключение на 2D contour вместо пустого виджета.
-- На Windows с настоящим GPU и после PyInstaller сборки визуальный E2E тест **ещё не выполнялся**.
+Результат: 29/29 страниц создали графики, доступны светлая и тёмная темы; JavaScript pageerror: 0. Скриншоты: `docs/ui-light.png`, `docs/ui-dark.png`.
 
-Снимки результатов: `screenshot.png`, `attention.png`, `optimizer_arena.png`, `decision_tree.png`, `neural_network.png`.
+Среда ограничивает сетевую навигацию Chromium (`URLBlocklist=*`), поэтому скриншоты и smoke test выполнены через `page.set_content` и проксирование вызовов к тому же `Controller.handle`, который обслуживает HTTP. Реальный HTTP API независимо проверяется в `tests/test_server.py`.
 
-Математические unit/integration tests отдельно: **110 passed**.
+Ограничения: Chromium в этой среде не имеет WebGL, поэтому проверен корректный fallback 3D в 2D контуры. Полный GUI E2E в пользовательской системе Linux ещё рекомендуется. Автозапуск этого визуального теста в GitHub Actions не настроен: он опционален и требует Playwright + Chromium.
+
+Повторить на Linux после установки `pip install playwright` и наличия `/usr/bin/chromium`:
+
+```bash
+.venv/bin/python scripts/visual_smoke.py --chromium /usr/bin/chromium
+```
+
+Отдельно запускать `./scripts/test_linux.sh` для unit/API проверок.
