@@ -28,7 +28,9 @@ jobs:
       - name: Python unit / API tests
         run: python -m pytest -q
       - name: Check JavaScript syntax
-        run: node --check ml_universe/static/app.js
+        run: |
+          node --check ml_universe/static/app.js
+          node --check ml_universe/static/visual_story.js
       - name: API smoke test
         run: |
           python - <<'PYSMOKE'
