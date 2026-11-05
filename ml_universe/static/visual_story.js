@@ -58,6 +58,11 @@
       const chosen = view==='surface' && webgl ? 1 : 2;
       return [{index:0,kind:'hero',note:0},{index:chosen,kind:'secondary',note:1,toggle:true},{index:3,kind:'secondary',note:2}];
     }
+    // Optimizer Arena: 2D and 3D display the same trajectory experiment.
+    if(page==='optimizer_gallery' && charts.length>=3){
+      const chosen=view==='surface' && webgl ? 2 : 0;
+      return [{index:chosen,kind:'hero',note:0,toggle:true},{index:1,kind:'secondary',note:1}];
+    }
     const entries=charts.map((_,i)=>({index:i,kind:i===0?'hero':'secondary',note:Math.min(i,2)}));
     if(entries.length>3 && !extrasExpanded)return entries.slice(0,3);
     return entries;
@@ -94,7 +99,10 @@
       copy.append(el('h3','visual-chart-title',spec.title||'Результат вычисления'));
       head.append(copy);
       const actions=el('div','visual-actions');
-      const help=el('p','visual-chart-intro',(guide[2]||[])[entry.note]||'Меняй параметры и наблюдай изменение данных.');
+      const note=entry.toggle&&state.page==='optimizer_gallery'&&view==='surface'
+        ?'Высота поверхности показывает значение функции потерь. Линии — фактические пути оптимизаторов.'
+        :(guide[2]||[])[entry.note]||'Меняй параметры и наблюдай изменение данных.';
+      const help=el('p','visual-chart-intro',note);
       if(entry.toggle){
         const tabs=el('div','visual-view-tabs');tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Режим поверхности потерь');
         for(const [id,label] of [['contour','2D'],['surface','3D']]){
