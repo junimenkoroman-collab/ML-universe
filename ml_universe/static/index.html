@@ -7,6 +7,7 @@
  <meta name="description" content="ML Universe: интерактивная лаборатория машинного обучения, нейросетей и NLP."/>
  <title>ML Universe · Лаборатория машинного обучения</title>
  <link rel="stylesheet" href="/app.css"/>
+ <link rel="stylesheet" href="/visual_story.css"/>
 </head>
 <body>
 <div id="app">
@@ -16,7 +17,7 @@
   <nav id="navigation" class="nav-scroll" aria-label="Лаборатории"></nav>
   <div class="sidebar-foot">
    <div class="mini-status"><span class="online-dot"></span> Локально · без облака</div>
-   <div class="tiny">ML → DL → NLP · v0.8.3</div>
+   <div class="tiny">ML → DL → NLP · v0.9</div>
   </div>
  </aside>
  <div class="main-column">
@@ -42,6 +43,6 @@
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Справка"><div class="modal"><button id="closeModal" class="modal-close" aria-label="Закрыть">×</button><h2>Как пользоваться ML Universe</h2><p>Слева выбирайте темы в последовательности ML → Deep Learning → NLP. Справа доступны только основные параметры. Для остальных нажмите «＋ Добавить блок»: например, подключите оптимизатор, функцию потерь или регуляризацию. Неиспользуемые блоки можно убрать кнопкой ×. Результаты показываются на графиках и в математическом инспекторе.</p><p>В линейной регрессии по умолчанию используется полный градиентный спуск с MSE. Изменяйте w и b, затем используйте кнопки истории обучения: шаг назад, воспроизведение, шаг вперёд и +25. Для сравнения алгоритмов откройте отдельную «Арену оптимизаторов». Для формул раскройте «Математический инспектор» под графиками.</p><p>На графике доступны увеличение, уменьшение и сброс масштаба; приближение колёсиком и двойной щелчок для сброса. Тёмная и светлая темы переключаются в шапке. Для обновления проекта на Linux используйте <code>git pull</code> и <code>./scripts/run_linux.sh</code>.</p><p class="tiny">Режимы attention, RNN и RAG показывают учебную математику, не работу предобученной LLM.</p></div></div>
-<script src="/plotly.min.js"></script><script src="/app.js"></script>
+<script src="/plotly.min.js"></script><script src="/visual_story.js"></script><script src="/app.js"></script>
 </body>
 </html>

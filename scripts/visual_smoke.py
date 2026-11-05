@@ -23,13 +23,14 @@ def main():
     args=p.parse_args()
     controller=Controller()
     with sync_playwright() as browser_api:
-        browser=browser_api.chromium.launch(headless=True,executable_path=args.chromium,args=['--no-sandbox','--disable-gpu','--use-gl=swiftshader'])
+        browser=browser_api.chromium.launch(headless=True,**({'executable_path': args.chromium} if Path(args.chromium).exists() else {}),args=['--no-sandbox','--use-gl=swiftshader'])
         page=browser.new_page(viewport={'width':1512,'height':960})
         errors=[]
         page.on('pageerror',lambda exc:errors.append(str(exc)))
         page.expose_function('python_api',lambda path,body:controller.handle(path,body))
         page.set_content((STATIC/'index.html').read_text(encoding='utf-8'))
         page.add_style_tag(content=(STATIC/'app.css').read_text())
+        page.add_style_tag(content=(STATIC/'visual_story.css').read_text())
         page.evaluate('''window.fetch=async(url, options)=>{
           try {const body=JSON.parse(options?.body||'{}');
             const result=await window.python_api(url,body);
@@ -37,13 +38,27 @@ def main():
           }catch(e){return {ok:false,json:async()=>({error:String(e)})}}
         };''')
         page.add_script_tag(content=gzip.decompress((STATIC/'plotly.min.js.gz').read_bytes()).decode('utf-8'))
+        page.add_script_tag(content=(STATIC/'visual_story.js').read_text(encoding='utf-8'))
         page.add_script_tag(content=(STATIC/'app.js').read_text(encoding='utf-8'))
-        page.wait_for_function("document.querySelectorAll('.js-plotly-plot').length >= 4", timeout=25000)
-        # A real browser verifies that the graph toolbar contains only the useful controls.
-        page.locator('#plot-0').hover()
-        page.wait_for_timeout(150)
-        buttons=page.locator('#plot-0 .modebar-btn').evaluate_all('(items)=>items.map(x=>x.getAttribute("data-title"))')
-        assert buttons==['Zoom in','Zoom out','Reset axes'],buttons
+        page.wait_for_function("document.querySelectorAll('.js-plotly-plot').length >= 3", timeout=40000)
+        assert page.locator('.visual-hero').count()==1
+        assert page.locator('.visual-chart').count()==3
+        assert page.locator('.visual-brief-title').count()==1
+        assert page.locator('.visual-plot-control').count()==9
+        assert page.locator('#plot-0 .modebar-btn').count()==0
+        assert page.evaluate('Object.keys(window.MLStory.lessons).length')==29
+        before=page.evaluate("document.querySelector('#plot-0')._fullLayout.xaxis.range")
+        page.locator('.visual-hero button[aria-label="Приблизить"]').click()
+        page.wait_for_timeout(90)
+        after=page.evaluate("document.querySelector('#plot-0')._fullLayout.xaxis.range")
+        assert after[1]-after[0] < before[1]-before[0], (before,after)
+        page.locator('.visual-hero button[aria-label="Вернуть исходный масштаб"]').click()
+        assert page.locator('.visual-view-button').count()>=1
+        if page.locator('.visual-view-button',has_text='3D').count():
+            page.locator('.visual-view-button',has_text='3D').click()
+            page.wait_for_timeout(200)
+            assert page.locator('.visual-view-button.active',has_text='3D').count()==1
+            page.locator('.visual-view-button',has_text='2D').click()
         assert page.locator('input[type="file"]').count()==0
         assert page.locator('.mode').count()==0
         assert page.locator('#modeBar').count()==0
@@ -106,10 +121,11 @@ def main():
             item.click()
             page.wait_for_timeout(400)
             print(' checked:',i,name,flush=True)
-            if page.locator('.chart-card').count()==0 or page.locator('#inspector').inner_text().startswith('Ошибка:'):
+            if page.locator('.visual-chart').count()==0 or page.locator('#inspector').inner_text().startswith('Ошибка:'):
                 failed.append((name,page.locator('#inspector').inner_text()[:100]))
         assert not failed,failed
         assert not errors,errors
+        assert page.locator('.visual-brief-title').count()==1
         print(f'OK: {args.nav_start}..{min(navs,args.nav_stop)-1} of {navs} pages, opt-in modules, conditional optimizer fields, both themes, 0 JS exceptions')
         browser.close()
 
