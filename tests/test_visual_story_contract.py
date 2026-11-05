@@ -18,7 +18,7 @@ TOPICS=[
 def test_visual_guides_cover_all_curriculum_topics():
     lesson_block=JS.split('const lessons = {',1)[1].split('\n  };',1)[0]
     for topic in TOPICS:
-        assert re.search(r'\\b'+re.escape(topic)+r': \\[',lesson_block), topic
+        assert re.search(r'\b'+re.escape(topic)+r': \[',lesson_block), topic
 
 def test_scientific_charts_stay_backend_driven():
     assert 'MLStory.render({charts,page,reg' in APP
@@ -31,7 +31,6 @@ def test_chart_accessibility_and_contextual_explanation():
     assert "aria-label" in JS
     assert 'visual-brief-title' in JS
     assert "Каждая клетка" in JS
-    assert "Показать" not in JS or True
     assert ".visual-hero" in CSS
     assert 'displayModeBar:false' in JS
     assert 'zoomIn2d' in APP  # legacy fallback retains controls
