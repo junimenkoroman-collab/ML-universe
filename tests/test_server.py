@@ -30,3 +30,23 @@ def test_csv_import_and_replay():
         state=call('run',{'steps':20})
         assert state['current']['loss']<before
     finally:server.shutdown();server.server_close()
+
+
+def test_local_plotly_bundle_serves_complete_javascript():
+    import threading
+    import urllib.request
+    from ml_universe.server import create_server
+
+    server = create_server(0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urllib.request.urlopen(f'http://127.0.0.1:{server.server_port}/plotly.min.js', timeout=20) as response:
+            data = response.read()
+            assert response.status == 200
+            assert response.headers['Content-Type'] == 'application/javascript'
+            assert b'plotly.js' in data[:100]
+            assert len(data) > 4_000_000
+    finally:
+        server.shutdown()
+        server.server_close()

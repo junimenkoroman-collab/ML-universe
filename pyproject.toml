@@ -24,7 +24,7 @@ include-package-data = true
 include = ["ml_universe*"]
 
 [tool.setuptools.package-data]
-ml_universe = ["static/*.html", "static/*.css", "static/*.js", "static/*.svg"]
+ml_universe = ["static/*.html", "static/*.css", "static/*.js", "static/*.js.gz", "static/*.svg"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

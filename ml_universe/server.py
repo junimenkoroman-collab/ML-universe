@@ -63,8 +63,15 @@ class Handler(BaseHTTPRequestHandler):
         path=urlparse(self.path).path
         if path=='/api/health':self.respond(200,{'ok':True,'version':'0.7.0'});return
         target=(STATIC/('index.html' if path=='/' else path.lstrip('/'))).resolve()
-        if not target.is_relative_to(STATIC.resolve()) or not target.is_file():self.send_error(404);return
-        data=target.read_bytes()
+        if not target.is_relative_to(STATIC.resolve()):self.send_error(404);return
+        if target.name == 'plotly.min.js' and not target.is_file():
+            compressed = Path(str(target) + '.gz')
+            if not compressed.is_file():self.send_error(404);return
+            import gzip
+            data = gzip.decompress(compressed.read_bytes())
+        else:
+            if not target.is_file():self.send_error(404);return
+            data=target.read_bytes()
         self.send_response(200);self.send_header('Content-Type',MIME.get(target.suffix,mimetypes.guess_type(str(target))[0] or 'application/octet-stream'))
         self.send_header('Content-Length',str(len(data)));self.send_header('Cache-Control','public, max-age=3600' if target.name=='plotly.min.js' else 'no-cache');self.end_headers();self.wfile.write(data)
 
