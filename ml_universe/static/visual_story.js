@@ -58,6 +58,11 @@
       const chosen = view==='surface' && webgl ? 1 : 2;
       return [{index:0,kind:'hero',note:0},{index:chosen,kind:'secondary',note:1,toggle:true},{index:3,kind:'secondary',note:2}];
     }
+    // Optimizer Arena: 2D and 3D display the same trajectory experiment.
+    if(page==='optimizer_gallery' && charts.length>=3){
+      const chosen=view==='surface' && webgl ? 2 : 0;
+      return [{index:chosen,kind:'hero',note:0,toggle:true},{index:1,kind:'secondary',note:1}];
+    }
     const entries=charts.map((_,i)=>({index:i,kind:i===0?'hero':'secondary',note:Math.min(i,2)}));
     if(entries.length>3 && !extrasExpanded)return entries.slice(0,3);
     return entries;
@@ -94,7 +99,10 @@
       copy.append(el('h3','visual-chart-title',spec.title||'Результат вычисления'));
       head.append(copy);
       const actions=el('div','visual-actions');
-      const help=el('p','visual-chart-intro',(guide[2]||[])[entry.note]||'Меняй параметры и наблюдай изменение данных.');
+      const note=entry.toggle&&state.page==='optimizer_gallery'&&view==='surface'
+        ?'Высота поверхности показывает значение функции потерь. Линии — фактические пути оптимизаторов.'
+        :(guide[2]||[])[entry.note]||'Меняй параметры и наблюдай изменение данных.';
+      const help=el('p','visual-chart-intro',note);
       if(entry.toggle){
         const tabs=el('div','visual-view-tabs');tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Режим поверхности потерь');
         for(const [id,label] of [['contour','2D'],['surface','3D']]){
@@ -149,6 +157,16 @@
         if(trace.type==='surface')trace.lighting={ambient:.82,diffuse:.75,specular:.07,roughness:.98};
         if(trace.type==='contour')trace.contours={...trace.contours,showlabels:false};
       }
+      // A one-point training curve is a valid observation, not an empty chart.
+      if(trace.type==='scatter'&&String(trace.mode||'').includes('lines')&&Array.isArray(trace.x)&&trace.x.length===1&&Array.isArray(trace.y)&&trace.y.length===1){
+        trace.mode='lines+markers';
+        trace.marker={size:9,color:trace.line?.color||palette.teaching,...trace.marker};
+      }
+      // On dense regression datasets residual segments remain visible but unobtrusive.
+      if(trace.name==='Residuals'){
+        trace.opacity=.26;
+        trace.line={...trace.line,width:.85};
+      }
       if(trace.type==='scatter'&&trace.mode&&trace.mode.includes('lines'))trace.line={width:2.5,...trace.line};
       if(trace.type==='scatter'&&trace.mode&&trace.mode.includes('markers'))trace.marker={size:7,opacity:.90,...trace.marker};
       if(trace.type==='bar'){
@@ -173,7 +191,7 @@
       font:{family:'Inter,system-ui,-apple-system,Segoe UI,sans-serif',size:12,color:textColor},
       colorway:[palette.teaching,palette.model,palette.secondary,palette.caution,'#9180A7','#647f74'],
       hoverlabel:{bgcolor:light?'#fff':'#333',bordercolor:axis,font:{size:12,color:light?'#242424':'#f2f2f2'}},hovermode:'closest',
-      uirevision:current.page+'-'+spec.title,
+      uirevision:(current?.page||'lab')+'-'+spec.title,
       showlegend:traces.filter(t=>t.showlegend!==false&&t.name).length>1,
       legend:{orientation:'h',x:0,y:-.25,font:{size:11},bgcolor:'rgba(0,0,0,0)',itemsizing:'constant'},
       xaxis:{title:{text:spec.layout?.xaxis?.title||'',font:{size:11},standoff:10},gridcolor:axis,gridwidth:.5,zeroline:false,showline:false,ticks:'outside',ticklen:3,nticks:6,automargin:true,showspikes:false},

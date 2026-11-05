@@ -1,5 +1,6 @@
 # ML Universe — ML → Deep Learning → NLP
 
+\n[Подробный визуальный гид для всех 29 лабораторий](docs/VISUAL_DESIGN_GUIDE.md) · [Визуальные принципы](docs/VISUAL_DESIGN.md)\n
 **Интерактивная офлайн-лаборатория** для изучения машинного обучения, нейросетей и NLP. Основная платформа — **Linux**; Windows-скрипты и сборка `.exe` сохранены на будущее.
 
 ![Интерфейс ML Universe — светлая тема](docs/ui-light.png)

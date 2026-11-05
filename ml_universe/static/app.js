@@ -285,26 +285,10 @@ function removeModule(id){const module=getLayout(page).modules.find(m=>m[0]===id
 function scheduleRegressionUpdate(key){clearTimeout(debounce);stopPlay();debounce=setTimeout(async()=>{try{if(GENERATORS.has(key)){await resetRegression(true)}else if(key==='w'||key==='b'){reg=await api('set',{w:cfg.w,b:cfg.b});drawRegression();}else{reg=await api('set',{[key]:cfg[key]});if(['loss','regularizer','lam','ratio','delta','quantile'].includes(key))surface=(await api('surface')).surface;drawRegression();}}catch(e){message(e.message,true)}},key==='w'||key==='b'?130:280);}
 async function resetRegression(quiet=false){try{clearTimeout(debounce);stopPlay();setBusy(true);reg=await api('init',cfg);surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config};drawRegression();if(!quiet)message('Новый эксперимент создан');}catch(e){message(e.message,true)}finally{setBusy(false)}}
 function setBusy(v){busy=v;$('#status-text').innerHTML=v?'<span class="online-dot"></span> Вычисление…':'<span class="online-dot"></span> Готово';}
-function plotTheme(){
- const light=ROOT.classList.contains('light');
- const primary=light?'#27272a':'#ececec';const grid=light?'#e9e9eb':'#414141';
- return {paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
- font:{color:light?'#66666b':'#bdbdc2',family:'Inter, system-ui, Segoe UI, Arial',size:11},
- colorway:['#0d9488','#64748b','#e09b55','#7c84a6','#5caa83','#b17889','#a39980','#818cf8'],
- xaxis:{gridcolor:grid,zerolinecolor:grid},yaxis:{gridcolor:grid,zerolinecolor:grid},
- legend:{orientation:'h',y:-.22,font:{size:10}},hovermode:'closest'};
-}
-function renderCharts(charts){if(window.MLStory){window.MLStory.render({charts,page,reg,webgl:HAS_WEBGL,theme:ROOT.classList.contains('light')?'light':'dark'});return;}const host=$('#graphs');if(!charts||!charts.length){host.innerHTML='<div class="empty-panel">Пока нет данных.</div>';return;}const key=page+'_'+charts.length;const recreate=currentKey!==key||$$('.chart-card').length!==charts.length;currentKey=key;if(recreate){host.innerHTML='';charts.forEach((c,i)=>{const card=document.createElement('div');card.className='chart-card'+(c.wide?' wide':'');card.innerHTML=`<div class="chart-head"><strong>${ESC(c.title||'Визуализация')}${!HAS_WEBGL&&c.traces.some(t=>t.type==='surface'||t.type==='scatter3d')?' · 2D контуры':''}</strong></div><div class="chart-body" id="plot-${i}"></div>`;host.appendChild(card);});}
- const theme=plotTheme();charts.forEach((c,i)=>{const original3d=c.traces.some(t=>t.type==='surface'||t.type==='scatter3d');
-  let traces=c.traces;
-  if(original3d&&!HAS_WEBGL)traces=traces.map(t=>t.type==='surface'?{type:'contour',x:t.x,y:t.y,z:t.z,colorscale:t.colorscale||'Viridis',showscale:false,opacity:t.opacity||1,ncontours:22}:t.type==='scatter3d'?{type:'scatter',x:t.x,y:t.y,mode:t.mode||'lines',name:t.name,line:t.line||{},marker:{...t.marker,size:Math.max(5,t.marker?.size||5)}}:t);
-  // Calm sequential scale for loss surfaces; preserve diverging scales for signed kernels.
-  const calm=ROOT.classList.contains('light')?[[0,'#f0f4f4'],[.5,'#9abfba'],[1,'#316b66']]:[[0,'#263a39'],[.5,'#4f817a'],[1,'#a7c8b9']];
-  traces=traces.map(t=>t.colorscale==='Viridis'?{...t,colorscale:calm}:t);
-  const target=$(`#plot-${i}`),layout={...theme,...c.layout,margin:{l:48,r:12,t:18,b:48},height:target?.clientHeight||340,autosize:true};if(layout.xaxis)layout.xaxis={...theme.xaxis,...layout.xaxis};if(layout.yaxis)layout.yaxis={...theme.yaxis,...layout.yaxis};if(original3d&&HAS_WEBGL){layout.scene={xaxis:{title:'x'},yaxis:{title:'y'},zaxis:{title:'Objective'},bgcolor:'rgba(0,0,0,0)',...layout.scene};delete layout.xaxis;delete layout.yaxis;layout.margin={l:0,r:0,t:0,b:0};}
-   // Focus on learning: only zoom and reset, without screenshot/export, lasso or 3D gimmicks.
-   const buttons=original3d&&HAS_WEBGL?['zoom3d','resetCameraDefault3d']:['zoomIn2d','zoomOut2d','resetScale2d'];
-   Plotly.react(target,traces,layout,{responsive:true,displaylogo:false,displayModeBar:'hover',scrollZoom:true,doubleClick:'reset',modeBarButtons:[buttons]}).catch(e=>message('Ошибка графика: '+e.message,true));});
+// The teaching narrative is the only chart renderer; no competing legacy UI.
+function renderCharts(charts){
+  if(!window.MLStory)throw Error('Не загружен визуальный движок ML Universe');
+  window.MLStory.render({charts,page,reg,webgl:HAS_WEBGL,theme:ROOT.classList.contains('light')?'light':'dark'});
 }
 const HUMAN_METRICS={'TOTAL LOSS':'Общая ошибка','WEIGHT w':'Вес w','BIAS b':'Смещение b','GRADIENT NORM':'Норма градиента','accuracy':'Точность','precision':'Precision','recall':'Recall','f1':'F1-мера','best_lr':'Лучший шаг','loss':'Ошибка','mse':'MSE','rmse':'RMSE','r2':'R²','inertia':'Инерция кластеров','steps':'Шаги','optimizer':'Оптимизатор','train_loss':'Ошибка обучения','validation_loss':'Ошибка проверки'};
 function humanMetric(key){return HUMAN_METRICS[key]||String(key).replaceAll('_',' ');}
@@ -315,13 +299,13 @@ function drawRegression(){if(!reg)return;const h=reg.history,last=reg.current,x=
  const segments=[];for(let i=0;i<x.length;i++){segments.push(x[i],x[i],null)}
  const ys=[];for(let i=0;i<x.length;i++)ys.push(y[i],p[i],null);
  const light=ROOT.classList.contains('light');
- const dataChart={title:'Модель и остаточные ошибки',traces:[{type:'scatter',mode:'markers',name:'Датасет',x,y,marker:{color:'#0d9488',size:7,opacity:.86}}, {type:'scatter',mode:'lines',name:'Residuals',x:segments,y:ys,line:{color:'#c58d85',width:1},opacity:.7,hoverinfo:'skip'}, {type:'scatter',mode:'lines',name:'ŷ = '+NUM(w)+'x + '+NUM(b),x:[Math.min(...x),Math.max(...x)],y:[w*Math.min(...x)+b,w*Math.max(...x)+b],line:{color:'#b78b56',width:3}}],layout:{xaxis:{title:'Признак x'},yaxis:{title:'Целевая переменная y'}}};
+ const dataChart={title:'Модель и остаточные ошибки',traces:[{type:'scatter',mode:'markers',name:'Датасет',x,y,marker:{color:'#0d9488',size:7,opacity:.86}}, {type:'scatter',mode:'lines',name:'Residuals',x:segments,y:ys,line:{color:'#c58d85',width:1},opacity:.7,hoverinfo:'skip'}, {type:'scatter',mode:'lines',name:'ŷ = '+NUM(w)+'x '+(b<0?'− '+NUM(-b):'+ '+NUM(b)),x:[Math.min(...x),Math.max(...x)],y:[w*Math.min(...x)+b,w*Math.max(...x)+b],line:{color:'#b78b56',width:3}}],layout:{xaxis:{title:'Признак x'},yaxis:{title:'Целевая переменная y'}}};
  const s=surface;
  const path3={type:'scatter3d',x:coords,y:bias,z:losses,name:'Путь оптимизации',mode:'lines+markers',line:{color:'#b78b56',width:5},marker:{size:2,color:'#b78b56'}};
  const point3={type:'scatter3d',x:[w],y:[b],z:[last.loss],name:'Текущие θ',mode:'markers',marker:{size:7,color:'#64748b'}};
  const surfChart={title:'3D · поверхность функции потерь',traces:s?[{type:'surface',x:s.w,y:s.b,z:s.z,opacity:.80,showscale:false,colorscale:'Viridis',hovertemplate:'w=%{x:.2f}<br>b=%{y:.2f}<br>Loss=%{z:.4f}<extra></extra>'},path3,point3]:[point3],layout:{scene:{xaxis:{title:'Weight w'},yaxis:{title:'Bias b'},zaxis:{title:'Loss'}}}};
  const contourChart={title:'Линии уровня и траектория',traces:s?[{type:'contour',x:s.w,y:s.b,z:s.z,showscale:false,colorscale:'Viridis',ncontours:24,contours:{coloring:'heatmap'},opacity:.89},{type:'scatter',x:coords,y:bias,mode:'lines+markers',name:'Траектория',line:{color:'#b78b56',width:2.5},marker:{color:'#eee2d2',size:5}},{type:'scatter',x:[w],y:[b],mode:'markers',name:'Текущая точка',marker:{color:'#8d89aa',size:14,symbol:'circle-open',line:{width:3}}}]:[],layout:{xaxis:{title:'Weight w'},yaxis:{title:'Bias b'}}};
- const lossChart={title:'История обучения · objective',traces:[{type:'scatter',x:h.map(q=>q.step),y:losses,mode:'lines',name:'Total objective',line:{color:'#0d9488',width:2.5}},{type:'scatter',x:h.map(q=>q.step),y:h.map(q=>q.data_loss),mode:'lines',name:'Data loss',line:{color:'#7c84a6',width:1.5,dash:'dot'}}],layout:{xaxis:{title:'Шаг оптимизации'},yaxis:{title:'Loss'}}};
+ const lossChart={title:'Как изменяется ошибка при обучении',traces:[{type:'scatter',x:h.map(q=>q.step),y:losses,mode:'lines',name:'Итоговая ошибка',line:{color:'#0d9488',width:2.5}},{type:'scatter',x:h.map(q=>q.step),y:h.map(q=>q.data_loss),mode:'lines',name:'Ошибка предсказаний',line:{color:'#7c84a6',width:1.5,dash:'dot'}}],layout:{xaxis:{title:'Шаг оптимизации'},yaxis:{title:'Ошибка'}}};
  renderCharts([dataChart,surfChart,contourChart,lossChart]);setStats({'TOTAL LOSS':last.loss,'WEIGHT w':w,'BIAS b':b,'GRADIENT NORM':Math.hypot(...currentG)});
  const d=reg.detail||{};const rows={'θ (w, b)':reg.theta,'∇L (full data)':currentG,'Data loss':last.data_loss,'Penalty':last.penalty,'RMSE':reg.score.rmse,'R²':reg.score.r2,'Optimizer':reg.config.optimizer,'Шаг':reg.steps};
  let html=kvHtml(rows)+`<div class="formula">θₜ₊₁ = Optimizer(θₜ, ∇L, stateₜ)</div>`;

@@ -31,6 +31,8 @@ jobs:
         run: |
           node --check ml_universe/static/app.js
           node --check ml_universe/static/visual_story.js
+      - name: Visual semantics contracts (Node)
+        run: node scripts/visual_contract.mjs
       - name: API smoke test
         run: |
           python - <<'PYSMOKE'
@@ -63,3 +65,13 @@ jobs:
       - name: Visual smoke across all 29 real laboratories
         run: |
           python scripts/visual_smoke.py --chromium auto --nav-start 0 --nav-stop 29
+      - name: Attach light and dark screenshots for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-universe-visual-review
+          path: |
+            docs/ui-light.png
+            docs/ui-dark.png
+          if-no-files-found: warn
+

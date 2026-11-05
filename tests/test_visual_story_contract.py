@@ -33,7 +33,7 @@ def test_chart_accessibility_and_contextual_explanation():
     assert "Каждая клетка" in JS
     assert ".visual-hero" in CSS
     assert 'displayModeBar:false' in JS
-    assert 'zoomIn2d' in APP  # legacy fallback retains controls
+    assert 'function renderCharts(charts)' in APP  # single authoritative renderer
     assert "view==='surface'" in JS
 
 def test_visualizations_are_meaningful_not_random():
@@ -42,3 +42,8 @@ def test_visualizations_are_meaningful_not_random():
     assert 'trace.colorscale=sequential' in JS
     assert 'layout.yaxis.scaleanchor=' in JS
     assert 'const needs3d=traces.some(isSurface)' in JS
+
+
+def test_optimizer_arena_uses_one_switchable_2d_3d_trajectory_view():
+    assert "page==='optimizer_gallery' && charts.length>=3" in JS
+    assert "index:chosen,kind:'hero',note:0,toggle:true" in JS
