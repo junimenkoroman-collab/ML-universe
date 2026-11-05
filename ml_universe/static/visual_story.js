@@ -173,7 +173,7 @@
       font:{family:'Inter,system-ui,-apple-system,Segoe UI,sans-serif',size:12,color:textColor},
       colorway:[palette.teaching,palette.model,palette.secondary,palette.caution,'#9180A7','#647f74'],
       hoverlabel:{bgcolor:light?'#fff':'#333',bordercolor:axis,font:{size:12,color:light?'#242424':'#f2f2f2'}},hovermode:'closest',
-      uirevision:(current?.page||'lab')+'-'+spec.title,
+      uirevision:current.page+'-'+spec.title,
       showlegend:traces.filter(t=>t.showlegend!==false&&t.name).length>1,
       legend:{orientation:'h',x:0,y:-.25,font:{size:11},bgcolor:'rgba(0,0,0,0)',itemsizing:'constant'},
       xaxis:{title:{text:spec.layout?.xaxis?.title||'',font:{size:11},standoff:10},gridcolor:axis,gridwidth:.5,zeroline:false,showline:false,ticks:'outside',ticklen:3,nticks:6,automargin:true,showspikes:false},
@@ -204,7 +204,7 @@
       if(rows>=2&&rows<=9&&cols>=2&&cols<=9&&Math.abs(rows-cols)<=2){
         layout.yaxis.scaleanchor='x';layout.yaxis.scaleratio=1;
       }
-      if(cols>12)layout.xaxis.tickangle=-35;
+      if(cols>12)layout.xaxis.tickangle=-30;
     }
     return layout;
   }

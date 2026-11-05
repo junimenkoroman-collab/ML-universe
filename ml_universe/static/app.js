@@ -285,12 +285,14 @@ function removeModule(id){const module=getLayout(page).modules.find(m=>m[0]===id
 function scheduleRegressionUpdate(key){clearTimeout(debounce);stopPlay();debounce=setTimeout(async()=>{try{if(GENERATORS.has(key)){await resetRegression(true)}else if(key==='w'||key==='b'){reg=await api('set',{w:cfg.w,b:cfg.b});drawRegression();}else{reg=await api('set',{[key]:cfg[key]});if(['loss','regularizer','lam','ratio','delta','quantile'].includes(key))surface=(await api('surface')).surface;drawRegression();}}catch(e){message(e.message,true)}},key==='w'||key==='b'?130:280);}
 async function resetRegression(quiet=false){try{clearTimeout(debounce);stopPlay();setBusy(true);reg=await api('init',cfg);surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config};drawRegression();if(!quiet)message('Новый эксперимент создан');}catch(e){message(e.message,true)}finally{setBusy(false)}}
 function setBusy(v){busy=v;$('#status-text').innerHTML=v?'<span class="online-dot"></span> Вычисление…':'<span class="online-dot"></span> Готово';}
-// Unified visual language. All 29 topics share this renderer, not 29 ad-hoc dashboards.
+// The teaching narrative is the only chart renderer; no competing legacy UI.
 function renderCharts(charts){
-  if(!window.MLStory)throw Error('Не загружена система визуализаций');
-  window.MLStory.render({charts,page,reg,theme:ROOT.classList.contains('light')?'light':'dark',webgl:HAS_WEBGL});
+  if(!window.MLStory)throw Error('Не загружен визуальный движок ML Universe');
+  window.MLStory.render({charts,page,reg,webgl:HAS_WEBGL,theme:ROOT.classList.contains('light')?'light':'dark'});
 }
-function setStats(items){let stats=Object.entries(items||{}).filter(([,v])=>typeof v==='number'||typeof v==='string');stats=stats.slice(0,8);if(!stats.length){$('#statsStrip').innerHTML='';return;}$('#statsStrip').innerHTML=stats.slice(0,4).map(([name,value])=>`<div class="stat-card"><div class="stat-label">${ESC(name.replaceAll('_',' ').toUpperCase())}</div><div class="stat-value" title="${ESC(valueLabel(value))}">${ESC(typeof value==='number'?NUM(value):value)}</div></div>`).join('');}
+const HUMAN_METRICS={'TOTAL LOSS':'Общая ошибка','WEIGHT w':'Вес w','BIAS b':'Смещение b','GRADIENT NORM':'Норма градиента','accuracy':'Точность','precision':'Precision','recall':'Recall','f1':'F1-мера','best_lr':'Лучший шаг','loss':'Ошибка','mse':'MSE','rmse':'RMSE','r2':'R²','inertia':'Инерция кластеров','steps':'Шаги','optimizer':'Оптимизатор','train_loss':'Ошибка обучения','validation_loss':'Ошибка проверки'};
+function humanMetric(key){return HUMAN_METRICS[key]||String(key).replaceAll('_',' ');}
+function setStats(items){let stats=Object.entries(items||{}).filter(([,v])=>typeof v==='number'||typeof v==='string');stats=stats.slice(0,8);if(!stats.length){$('#statsStrip').innerHTML='';return;}$('#statsStrip').innerHTML=stats.slice(0,4).map(([name,value])=>`<div class="stat-card"><div class="stat-label">${ESC(humanMetric(name))}</div><div class="stat-value" title="${ESC(valueLabel(value))}">${ESC(typeof value==='number'?NUM(value):value)}</div></div>`).join('');}
 function kvHtml(items){return Object.entries(items).slice(0,24).map(([k,v])=>`<div class="keyval"><span>${ESC(k.replaceAll('_',' '))}</span><strong>${ESC(valueLabel(v))}</strong></div>`).join('');}
 function setExplanation(html){$('#explanation').innerHTML=html;}
 function drawRegression(){if(!reg)return;const h=reg.history,last=reg.current,x=reg.x,y=reg.y,p=reg.prediction,w=reg.theta[0],b=reg.theta[1];const coords=h.map(q=>q.w),bias=h.map(q=>q.b),losses=h.map(q=>q.loss);const currentG=last.gradient;
