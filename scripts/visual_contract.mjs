@@ -13,6 +13,10 @@ const classes=designTraces({traces:[{type:'scatter',mode:'markers',x:[1,2,3,4],y
 assert.equal(classes.length,2,'Categorical classes must be split into discrete legend groups');
 assert.deepEqual(Array.from(classes.map(x=>x.name)),['Класс 0','Класс 1']);
 assert.notEqual(classes[0].marker.color,classes[1].marker.color);
+const initial=designTraces({traces:[{type:'scatter',mode:'lines',x:[0],y:[7],name:'Итоговая ошибка',line:{color:'#148579'}}]},'light');
+assert.equal(initial[0].mode,'lines+markers','First training step must be visible as a point');
+const segments=designTraces({traces:[{type:'scatter',mode:'lines',name:'Residuals',x:[0,0,null],y:[1,2,null]}]},'light');
+assert(segments[0].opacity<0.4,'Dense residual segments should not overpower data');
 const heat=designTraces({traces:[{type:'heatmap',z:[[0,.2],[.6,1]],colorscale:'Viridis'}]},'light');
 assert(Array.isArray(heat[0].colorscale),'Heatmaps should have a calm sequential color scale');
 const layout=plotLayout({title:'Readable',layout:{xaxis:{title:'Feature X'},yaxis:{title:'Prediction'}}},classes,'light',false,{height:400});

@@ -108,9 +108,13 @@ def main():
         page.locator('#status-text').hover()
         navs=page.locator('.nav-item').count()
         assert navs==29,navs
+        page.evaluate("document.querySelector('.content-scroll').scrollTop=0")
+        page.wait_for_timeout(250)
         page.screenshot(path=str(ROOT/'docs'/'ui-light.png'),full_page=False)
         page.locator('#themeButton').click()
         page.wait_for_timeout(850)
+        page.evaluate("document.querySelector('.content-scroll').scrollTop=0")
+        page.wait_for_timeout(250)
         page.screenshot(path=str(ROOT/'docs'/'ui-dark.png'),full_page=False)
         assert not page.locator('html').get_attribute('class')
         # Clear user-level theme and run every available lab in real Python.

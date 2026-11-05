@@ -157,6 +157,16 @@
         if(trace.type==='surface')trace.lighting={ambient:.82,diffuse:.75,specular:.07,roughness:.98};
         if(trace.type==='contour')trace.contours={...trace.contours,showlabels:false};
       }
+      // A one-point training curve is a valid observation, not an empty chart.
+      if(trace.type==='scatter'&&String(trace.mode||'').includes('lines')&&Array.isArray(trace.x)&&trace.x.length===1&&Array.isArray(trace.y)&&trace.y.length===1){
+        trace.mode='lines+markers';
+        trace.marker={size:9,color:trace.line?.color||palette.teaching,...trace.marker};
+      }
+      // On dense regression datasets residual segments remain visible but unobtrusive.
+      if(trace.name==='Residuals'){
+        trace.opacity=.26;
+        trace.line={...trace.line,width:.85};
+      }
       if(trace.type==='scatter'&&trace.mode&&trace.mode.includes('lines'))trace.line={width:2.5,...trace.line};
       if(trace.type==='scatter'&&trace.mode&&trace.mode.includes('markers'))trace.marker={size:7,opacity:.90,...trace.marker};
       if(trace.type==='bar'){
