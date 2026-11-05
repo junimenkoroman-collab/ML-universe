@@ -1,113 +1,125 @@
-# ML Universe — Interactive Machine Learning Laboratory
+# ML Universe — ML → Deep Learning → NLP
 
-**ML Universe** — работающее офлайн-приложение с интерактивными визуализациями и математическими вычислениями по машинному обучению. Исходный код открыт, все учебные расчёты выполняются локально.
+**Интерактивная офлайн-лаборатория** для изучения машинного обучения, нейросетей и NLP. Основная платформа — **Linux**; Windows-скрипты и сборка `.exe` сохранены на будущее.
 
-> **Статус:** действующий расширяемый прототип v0.7.0, а не полностью завершённая реализация всех 124 глав мастер-ТЗ. Сейчас реализовано более 30 отдельных вычислительных лабораторий и 12 правил обновления оптимизатора. Включены 2D/3D-срезы и визуализации, многократные эксперименты, сохранение регрессии и воспроизведение шагов. Часть расширенных технологий и polish пока в backlog.
+![Интерфейс ML Universe — светлая тема](docs/ui-light.png)
 
-## Linux — основная платформа проекта
+[Тёмная тема](docs/ui-dark.png) · [Руководство по лабораториям](docs/LEARNING_GUIDE.md) · [Матрица реализации](docs/IMPLEMENTATION_MATRIX.md)
 
-**Для Linux запускайте в браузере:**
+> Версия **0.8.0 — Focused Curriculum**. Это набор настоящих вычислительных учебных лабораторий, а не реализация полного DL/NLP-фреймворка. Обучение большой LLM, полноценный генеративный RAG и trainable CNN/RNN **не выдаются за работающие функции**. Небольшие архитектуры и математические операции доступны для экспериментов.
+
+## Запуск на Linux
+
+Требуется **Python ≥3.11**, `venv`, браузер и интернет **только для первой установки зависимостей**.
 
 ```bash
-# Из корня репозитория; требуется Python >= 3.11 и модуль venv
-python3.11 -m venv .venv
-source .venv/bin/activate
+git clone https://github.com/junimenkoroman-collab/ML-universe.git
+cd ML-universe
 ./scripts/run_linux.sh
 ```
 
-Скрипт создаст `.venv`, установит зависимости при первом запуске и откроет офлайн-приложение через `127.0.0.1`. Нативный оконный движок не нужен. Для запуска тестов: `python -m pytest -q` (после установки `pytest`) или `./scripts/test_linux.sh`.
+Скрипт создаёт `.venv`, устанавливает NumPy/SciPy/scikit-learn и запускает приложение **локально** (`127.0.0.1`). Графики Plotly встроены в проект; внешний веб-сервис не нужен.
 
-Подробно: [GitHub и Linux](docs/GITHUB_LINUX_SETUP.md). В репозитории добавлен `.github/workflows/linux-ci.yml` для автоматической проверки при изменениях. **Windows сборка остаётся доступна**, но не является основной платформой.
-
-**Не открывайте существующий локальный HTTP API напрямую в публичный интернет** — используйте SSH-туннель для личной удалённой работы, см. инструкцию.
-
-## Запуск из исходников
-
-Требуется Python 3.11+ и Windows 10/11 x64 (также работает на Linux/macOS через браузер).
-
-```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e '.[desktop]'
-python -m ml_universe
-```
-
-Если системный WebView2 недоступен или возникли проблемы с 3D-графиками, запустите интерфейс в обычном браузере:
-
-```powershell
-python -m ml_universe --browser
-```
-
-На Linux:
+Если репозиторий уже скачан и хочется получить мою новую версию:
 
 ```bash
-python -m pip install -e .
-python -m ml_universe --browser
+cd ML-universe
+git pull --ff-only
+./scripts/run_linux.sh
 ```
 
-Приложение поднимает локальный HTTP-сервер **только** на `127.0.0.1` на случайном свободном порту. Все JS-графики поставляются локально, внешний интернет не требуется. Дополнительный оконный движок — `pywebview` (на Windows работает через совместимый WebView). Без него откроется системный браузер.
+Если локально менял код, сначала сохрани изменения в отдельной ветке/коммите, чтобы `git pull` не затёр работу. `git pull` не нужен при каждом запуске: только после новых коммитов.
 
-## Сборка настоящего Windows `.exe`
-
-**Сборка PyInstaller под Windows должна запускаться на Windows.** Linux-сборка не является Windows `.exe` и не должна им называться.
-
-Способ 1: в PowerShell в корне проекта:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1
-```
-
-После тестов и smoke-test готовый архив:
-
-`dist\ML_Universe_Windows_x64.zip`
-
-Распакуйте **всю папку** и запустите `ML_Universe\ML_Universe.exe`. Пользователю не требуется устанавливать Python. Предпочтителен современный Windows WebView2 runtime; при его отсутствии передайте аргумент `--browser` и используйте установленный браузер.
-
-Способ 2: загрузите проект в GitHub, откройте **Actions → Build Windows EXE → Run workflow**, затем скачайте artifact `ML_Universe_Windows_x64`. Workflow на Windows устанавливает зависимости, запускает тесты, собирает `.exe`, проверяет локальный API и архивирует переносимый дистрибутив.
-
-## Что можно делать сейчас
-
-В главной лаборатории: синтезировать данные `y=wx+b+noise`, двигать веса и смещение, измерять residuals/MSE/MAE/Huber/RMSE/Log-Cosh/Quantile, включать L1/L2/Elastic Net, смотреть настоящую 3D loss surface и contour, наблюдать SGD/Momentum/Nesterov/AdaGrad/RMSProp/Adam/AdamW/AMSGrad/NAdam/Adamax/AdaDelta/Lion, включать LR scheduler, просматривать градиенты и состояния, двигаться по timeline, сравнивать оптимизаторы, сохранять/загружать результаты.
-
-В других лабораториях можно изменять параметры и запускать реальные вычисления: пользовательские функции, линейная алгебра, нормы, статистика/CLT, информационная теория, LR schedules, PCA, classification (logistic, SVM, kNN, Naive Bayes), деревья, леса и бустинг, кластеризация (K-Means, DBSCAN, GMM, Agglomerative), anomaly detection, leakage, scaling, bias-variance, permutation importance, group fairness, ранжирование NDCG, рекомендации/SVD, graph message passing, confounding, single neuron, NumPy-MLP с backprop на XOR, CNN kernel maps, TF-IDF, BPE, scaled dot-product attention, sampling temperature/top-k/top-p, Q-learning Gridworld, Bayesian update, AR forecasting, forward diffusion.
-
-Все страницы научно вычислительные, но глубина интерактивного пошагового инспектора различается. Полный ручной step/debug/seek реализован сейчас для linear regression; многие другие лаборатории выполняют выбранный расчёт целиком.
-
-## Горячие клавиши
-
-- `Space` — воспроизведение/пауза главного эксперимента, если фокус не в поле ввода.
-- `Esc` — закрыть справку / остановить playback.
-
-## Тесты
+Если браузер не открылся автоматически:
 
 ```bash
-python -m pytest -q
+.venv/bin/python -m ml_universe --no-open --port 8765
+```
+
+Открой **http://127.0.0.1:8765/** на том же Linux-компьютере.
+
+## Учебные разделы — только необходимое
+
+Навигация сгруппирована в **7 этапов** и **29 экранов** (часть алгоритмов выбирается внутри общей лаборатории):
+
+| Путь | Что можно исследовать |
+|---|---|
+| Регрессия и оптимизация | Linear Regression, GD/SGD/Mini-batch, Momentum, Nesterov, AdaGrad, RMSProp, Adam, AdamW, реальные loss, регуляризации, Ridge/Lasso paths, schedulers, sweep и Projected GD |
+| Классификация | Logistic/Softmax, linear/kernel SVM, kNN, Gaussian Naive Bayes, Decision Tree, Random Forest, Gradient Boosting, ROC/PR и classification metrics |
+| Кластеризация | K-Means с центроидами, траекториями, assignment/update и inertia |
+| Deep Learning | Один нейрон, активации, MLP/XOR, forward/backprop, численный gradient check, initialization, vanishing gradients, dropout, CNN convolution/receptive field, простая RNN |
+| NLP | Unicode preprocessing, BoW, TF-IDF, учебный BPE, Multinomial Naive Bayes, контекстные embeddings, Q/K/V, multi-head attention, greedy/temperature/top-k/top-p, retrieval для RAG |
+| Reinforcement Learning | Multi-armed bandit и epsilon-greedy |
+| Математическая база | Векторы, dot product, матрицы 2×2, градиент, Hessian, L1/L2/L∞, entropy, cross-entropy, KL/JS |
+
+Удалены из UI и API не входившие в эту программу PCA, GMM, DBSCAN, случайные леса Extra Trees, AdaBoost, advanced RL, time series, diffusion, Graph ML, causal/fairness/recommender/ranking и другие боковые темы. Продвинутый спектральный линал тоже убран из учебной панели.
+
+## Как пользоваться
+
+1. Слева выбери лабораторию. В правой панели меняй гиперпараметры, выбирай алгоритм, датасет или текст.
+2. В большинстве лабораторий при изменении параметров расчёт выполняется автоматически с небольшой задержкой; **«Применить настройки»** повторяет расчёт явно.
+3. В **«Линейной регрессии»** можно менять веса вручную, нажимать **▶** в timeline для пошагового обучения, выбирать loss, регуляризацию и оптимизатор, запускать **+25/+100** шагов и смотреть **2D/3D loss surface**.
+4. Переключай светлую/тёмную тему в правом верхнем углу. Выбор запоминается браузером, если доступно локальное хранилище.
+5. Импортируй CSV с колонками `x,y` или сохраняй/восстанавливай `.mluniverse` **для регрессионного эксперимента**. Универсальный экспорт остальных лабораторий пока не реализован.
+
+Подробные примеры: **[docs/LEARNING_GUIDE.md](docs/LEARNING_GUIDE.md)**.
+
+При отсутствии WebGL объёмная поверхность заменяется точными **2D-контурами**, а не пустым графиком; для 3D нужен браузер с аппаратной/программной поддержкой WebGL.
+
+## Проверки и CI
+
+Локальные тесты:
+
+```bash
+./scripts/test_linux.sh
+```
+
+Скрипт проверяет наличие `pytest` в `.venv` (при необходимости устанавливает), запускает математические и API тесты и дополнительно `node --check`, если Node.js установлен.
+
+Прямые команды:
+
+```bash
+.venv/bin/python -m pytest -q
 node --check ml_universe/static/app.js
 ```
 
-## Структура
+**GitHub Actions запускаются автоматически** на каждом `push` в `main` и каждом Pull Request:
 
-- `ml_universe/core/maths.py` — безопасный AST, loss functions и аналитические производные.
-- `ml_universe/core/optimizers.py` — настоящие правила оптимизаторов и schedulers.
-- `ml_universe/core/regression.py` — воспроизводимая симуляция с сохранением RNG/optimizer state.
-- `ml_universe/core/labs.py`, `core/extras.py` — другие ML/DS вычислительные лаборатории.
-- `ml_universe/static/` — офлайн-интерфейс и локальный Plotly JS.
-- `ml_universe/server.py` — HTTP API на loopback, запуск окна.
-- `tests/` — тесты математических инвариантов и API.
-- `scripts/build_windows.ps1` — сборка и smoke-test Windows exe.
-- `.github/workflows/windows-exe.yml` — воспроизводимая сборка через GitHub Actions.
-- `docs/MASTER_PROMPT.md` — полный исходный мастер-промпт (124 раздела).
-- `docs/IMPLEMENTATION_MATRIX.md` — точная картина реализованного и отсутствующего.
+1. Открой **[Actions → Linux quality checks](https://github.com/junimenkoroman-collab/ML-universe/actions/workflows/linux-ci.yml)**.
+2. Смотри `tests` для Python 3.11/3.12 (отдельные jobs). Зелёная галочка — CI прошёл.
+3. Для ручного запуска выбери **Run workflow → main → Run workflow**.
 
-## Научные соглашения
+Проверки на моей стороне: unit/API tests, синтаксис JS, 29 лабораторий в headless Chromium с реальными Python-ответами, светлая/тёмная тема и скриншоты. Наличие успешного CI именно для нового коммита проверяется отдельно на GitHub.
 
-Основной objective: `MSE = mean((ŷ−y)²)`. При L2 используется `λ Σwⱼ²`, при L1 — `λ Σ|wⱼ|`; смещение не штрафуется. При Elastic Net: `λ [ratio·L1+(1-ratio)·Σwⱼ²]`. В точке недифференцируемости L1 выбран нулевой субградиент. AdamW выполняет decoupled decay отдельно от указанного objective, не выдаётся за L2-градиент. Training step / sample selection отличаются от epoch. Примеры генерации NLP явно показывают, какие веса случайны и какие не обучались.
+## Сотрудничество через GitHub
 
-## Безопасность и ограничения
+Когда я вношу изменение непосредственно в GitHub, **тебе достаточно `git pull --ff-only`**, затем запускаешь приложение. Никакие ZIP-архивы не нужны.
 
-- AST не позволяет произвольные Python-вызовы.
-- HTTP прослушивает только loopback; сеть для вычислений не используется.
-- Импортируются структурированные JSON-эксперименты, а не произвольные pickle.
-- Очень большие матрицы ограничены с целью устойчивой отзывчивости.
-- Классификаторы и ансамбли вне основной лаборатории используют scikit-learn, а не переписанные вручную пошаговые движки.
-- Подробная проверка отображения GUI на Windows и готового `.exe` должна быть проведена на Windows после сборки.
+Когда меняешь код самостоятельно:
+
+```bash
+git checkout -b feature/my-experiment
+# изменения и локальные тесты
+git add .
+git commit -m "Improve experiment"
+git push -u origin feature/my-experiment
+```
+
+Создай Pull Request и проверь GitHub Actions. Если просто используешь лаборатории, `git commit/push` тебе вообще не нужен.
+
+## Техническая структура
+
+- `ml_universe/core/regression.py` — реальные состояния обучаемой регрессии и replay.
+- `ml_universe/core/maths.py` — loss/градиенты, безопасный AST, производные.
+- `ml_universe/core/optimizers.py` — оптимизаторы и schedulers.
+- `ml_universe/core/labs.py` — основные ML/DL/NLP вычисления.
+- `ml_universe/core/curriculum.py` — сфокусированные новые лаборатории.
+- `ml_universe/core/extras.py` — только базовая математика и learning-rate schedulers.
+- `ml_universe/static/` — полностью офлайн браузерный интерфейс; локальный Plotly JS.
+- `ml_universe/server.py` — API, доступный лишь на loopback.
+- `tests/` — численная проверка, целостность API и учебных сценариев.
+- `.github/workflows/` — Linux CI и сохранённая Windows exe-сборка.
+
+Безопасность: **не открывай этот локальный HTTP API в публичный интернет**. Глобальное состояние эксперимента не изолировано по пользователям, а аутентификации нет. Если нужен личный VPS — используй SSH-туннель, см. [инструкцию](docs/GITHUB_LINUX_SETUP.md).
+
+**Windows exe-сборку не удаляли:** файлы `scripts/build_windows.ps1`, `scripts/run_windows.ps1` и `.github/workflows/windows-exe.yml` сохранены. Сборка/GUI на Windows в этом релизе не перепроверялись.

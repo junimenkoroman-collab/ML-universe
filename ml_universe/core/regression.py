@@ -7,7 +7,7 @@ from .maths import loss_and_grad,regularization
 from .optimizers import update,scheduler_lr
 
 DEFAULT={'n':90,'true_w':2.7,'true_b':1.3,'noise':.65,'outliers':0,'seed':42,'w':-2.5,'b':-3.,
- 'loss':'mse','regularizer':'none','lam':0.,'ratio':.5,'delta':1.,'quantile':.5,'optimizer':'adam',
+ 'loss':'mse','weight_mode':'uniform','regularizer':'none','lam':0.,'ratio':.5,'delta':1.,'quantile':.5,'optimizer':'adam',
  'lr':.065,'batch':16,'sampling':'mini','momentum':.9,'beta1':.9,'beta2':.999,'rho':.9,'epsilon':1e-8,
  'weight_decay':.015,'clip':0.,'scheduler':'constant','total':200,'warmup':10}
 
@@ -33,7 +33,13 @@ class RegressionExperiment:
     def objective(self,theta,idx=None):
         ids=np.arange(len(self.x)) if idx is None else np.asarray(idx,dtype=int)
         p=theta[0]*self.x[ids]+theta[1]
-        data,der=loss_and_grad(self.y[ids],p,self.cfg['loss'],self.cfg['delta'],self.cfg['quantile'])
+        weights=None
+        if self.cfg['loss']=='weighted_mse':
+            mode=self.cfg.get('weight_mode','uniform')
+            if mode=='edge':weights=1+abs(self.x[ids])
+            elif mode=='center':weights=1/(1+abs(self.x[ids]))
+            elif mode!='uniform':raise ValueError('Неизвестный режим весов примеров')
+        data,der=loss_and_grad(self.y[ids],p,self.cfg['loss'],self.cfg['delta'],self.cfg['quantile'],weights)
         pen,pg=regularization(theta[:1],self.cfg['regularizer'],self.cfg['lam'],self.cfg['ratio'])
         grad=np.array([np.dot(der,self.x[ids])+pg[0],np.sum(der)])
         return float(data+pen),float(data),float(pen),grad

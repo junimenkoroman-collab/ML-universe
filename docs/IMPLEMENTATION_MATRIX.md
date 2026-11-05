@@ -1,47 +1,41 @@
-# ML Universe — статус реализации на текущем этапе
+# ML Universe v0.8 — что реально реализовано
 
-## Действительно работающие вычислительные модули
+Эта версия целенаправленно оставляет только учебный путь **базовый линал → классический ML → DL → NLP** и маленький бонус по RL. Не путать интерактивную демонстрацию операции с обучением полноценной сети.
 
-- [x] Линейная регрессия: синтетический датасет, веса, bias, остатки, loss, регуляризация, поверхность ошибок, replay, save/load.
-- [x] Loss: MSE, SSE, RMSE, MAE, Huber, Log-Cosh, Quantile, Weighted MSE (на уровне math API; weighted UI не выделен).
-- [x] L1/L2/Elastic Net, математический градиент, bias исключён из штрафа.
-- [x] GD/SGD/Mini Batch, Momentum, Nesterov, AdaGrad, RMSProp, Adam, AdamW, AMSGrad, Nadam, Adamax, Adadelta, Lion.
-- [x] Численные benchmark оптимизации, 3D/2D контуры и траектории, LR scheduler.
-- [x] Линейная алгебра: 2D grid transformation, matrix products, eigenvalues, SVD.
-- [x] Нормы L1/L2/L∞, статистика CLT, информационная теория, кастомные функции, численные производные.
-- [x] Logistic regression, softmax через scipy, SVM, kNN, Naive Bayes, деревья классификации, Random Forest, Extra Trees, AdaBoost, Gradient Boosting: *через обучаемые модели scikit-learn*, не полный ручной отладчик.
-- [x] K-Means, DBSCAN, hierarchical, Gaussian Mixture Models; PCA и ручная ось проекции.
-- [x] NumPy-нейрон и MLP с ручным backprop; CIF/численные операции CNN с пользовательским kernel.
-- [x] TF-IDF/BoW через scikit-learn, Unicode tokens, учебный BPE, Q/K/V scaled dot-product attention, sampling decoding.
-- [x] Q-learning Gridworld, Beta-Bernoulli, AR forecasting, Leakage demo, bias-variance, anomaly detection.
-- [x] Feature scaling, NDCG, recommendations SVD, graph message passing, causal confounding, group fairness, permutation importance, forward diffusion.
-- [x] Офлайн Plotly, JSON API, optional desktop webview, responsive UI, dark/light theme.
-- [x] Unit/integration tests, Windows build script, Windows GitHub Actions workflow.
+## Входящий в scope функционал
 
-## Реализовано частично — текущая работа или ограничения
+**Регрессия и оптимизация:** `ŷ = wx+b`, residuals, MSE, SSE, RMSE, MAE, Huber, Smooth L1, Log-Cosh, Quantile, Weighted MSE (3 вида весов наблюдений), L1/L2/ElasticNet, Ridge/Lasso/ElasticNet regularization path, GD/SGD/Mini-batch, Momentum, Nesterov, AdaGrad, RMSProp, Adam, AdamW, LR schedulers, 25-точечный grid sweep, Projected GD (на L2-шар), Optimizer Arena, 2D/3D loss surface, history/replay, CSV и сохранение эксперимента.
 
-- [~] Внутренний отладчик по каждой компоненте: полностью в регрессии, частично в других лабораториях.
-- [~] Визуальная геометрия деревьев: решения/список узлов, но нет полнофункционального редактируемого дерева.
-- [~] CNN: реальные kernels/feature maps, пока без end-to-end обучения CNN.
-- [~] Transformer: один scaled dot-product head и toy decoder, нет обученной полноценной архитектуры с несколькими слоями.
-- [~] Нейросети: небольшой MLP и backprop, нет GPU-тренировки больших сетей.
-- [~] Экспорт: JSON-regression; нет сохранения состояния всех дополнительных лабораторий.
-- [~] Lessons/Challenge: пояснения и численная цель для регрессии, без редактора полноценных курсов и прогресса.
-- [~] Windows: reproducible CI/build scripts подготовлены, Windows exe ещё НЕ собран и НЕ проверен в Linux окружении.
-- [~] UI: offline dark/light theme; браузерное окно через pywebview, не чистые нативные Qt controls.
+**Классификация:** Logistic Regression, Softmax Regression (3 класса, Gaussian Blobs), линейный/kernel SVM, kNN, Gaussian Naive Bayes, дерево и критерии split, Random Forest, Gradient Boosting, ROC, PR, confusion matrix и метрики. Модели scikit-learn; показатели на учебной выборке, не независимый тест качества обобщения.
 
-## Пока не реализовано в этой поставке (часть 124-главного мастер-ТЗ)
+**K-Means:** инициализация random/K-means++, assignment/update, фактические центроиды, inertia и путь обновлений. Убраны DBSCAN/GMM/hierarchical.
 
-- [ ] полноценный мультислойный Transformer/LLM с trainable tokenizer/heads, предобученными весами, finetuning и KV cache;
-- [ ] полноценные CNN/RNN/LSTM/GRU/GAN/VAE генеративные учебные тренировки;
-- [ ] deep-learning GPU execution, mixed precision, DDP;
-- [ ] расширенные байесовские методы MCMC/VI;
-- [ ] RL среды за пределами маленького Gridworld;
-- [ ] визуальный drag-and-drop конструктор моделей и совместимых pipelines;
-- [ ] универсальный plugin SDK с изоляцией и версионированием;
-- [ ] исследовательские модели Newton/BFGS/L-BFGS/coordinate/proximal/line search;
-- [ ] крупный набор интерактивных учебных сценариев и система достижений;
-- [ ] мультиязычная локализация, полноценная доступность, внешнее обновление;
-- [ ] полное Windows E2E GUI тестирование и подписание исполняемого файла.
+**DL:** одиночный нейрон, 9 активаций, MLP/XOR с аналитическим forward/backprop и численной проверкой градиента, выбор weight initialization, нормы обратных градиентов в глубокой ReLU-сети, inverted dropout, свёртка 3×3 и receptive field, простая Elman RNN. CNN/RNN в текущем модуле не обучаются end-to-end — здесь показаны математические операции.
 
-**Принцип:** «не сделано» здесь не означает декоративную страницу: недоделанные алгоритмы не представлены как готовые в интерфейсе.
+**NLP:** Unicode-токенизация, CountVectorizer/Bag of Words, TF-IDF, BPE, текстовый MultinomialNB на встроенном маленьком корпусе, co-occurrence→PPMI→SVD embeddings, scaled dot-product attention Q/K/V, multi-head attention и выходная проекция, fixed-logits decoding (greedy, temperature, top-K, top-P), RAG retrieval (TF-IDF + cosine + top-K; генерация LLM отсутствует).
+
+**RL:** Bernoulli Multi-Armed Bandit, epsilon-greedy, эмпирические оценки, подсчёт pulls, среднего reward и pseudo-regret. Gridworld Q-learning удалён.
+
+**Математика:** вектор и matrix 2×2, dot product, линейное преобразование сетки, L1/L2/L∞, производная, градиент и Hessian через центральные разности, энтропия/cross entropy/KL/JS для Бернулли.
+
+## Глубина реализации и ограничения
+
+- Ручное `step/back/seek` сохраняющее RNG и состояние оптимизатора реализовано **для линейной регрессии**. Остальные лаборатории пересчитывают полный выбранный эксперимент.
+- Для Nesterov и AdamW используются явные выбранные соглашения, а не обещание универсальной эквивалентности всех реализаций.
+- Классификация через scikit-learn (не реализован полноценный ручной пошаговый CART или обучение через собственный backprop).
+- Многомерная регрессия в path lab существует, но основная интерактивная loss surface использует два параметра `w,b`.
+- Отдельные RNN/CNN/Attention/Embeddings не используют предобученную модель. Математика настоящая, параметры учебные.
+- Retrieval RAG не подменяется фиктивным ответом от LLM.
+- В офлайн Chromium без WebGL включается 2D contour fallback; настоящий 3D возможен при доступном WebGL.
+- Windows workflow и скрипты не удалены, но на Linux `.exe` не собирается.
+- Локальное API доступно только одному доверенному пользователю и **не годится для публичного хостинга без защиты**.
+
+## Удалённые направления
+
+PCA, advanced spectral algebra, DBSCAN, GMM, hierarchical, Extra Trees, AdaBoost, статистика CLT, anomaly, time series, leakage demo, bias-variance, feature scaling demo, fairness, causal inference, graph ML, diffusion, ranking, recommendations, probability/Bayes и Gridworld Q-learning — вне текущей программы. Их нет в навигации и реестре `run_lab`.
+
+## Качество
+
+- Новые математические тесты сверяют аналитический градиент с central finite differences и проверяют invariants внимания/PGD/softmax.
+- Chromium smoke test проходит по 29 пунктам меню и проверяет обе темы с результатами вычислительного `Controller`.
+- Источники фронтенда: `/ml_universe/static`; тесты и docs сопровождают изменения.
