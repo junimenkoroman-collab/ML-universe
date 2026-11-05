@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local artifacts
+dist/
+build/
+*.spec
+!packaging/*.spec
+*.log
+.DS_Store
+
+# Editor/OS
+.idea/
+.vscode/
+Thumbs.db
+
+# Local user data (sample *.mluniverse files under examples ARE tracked)
+experiments/
+user_data/

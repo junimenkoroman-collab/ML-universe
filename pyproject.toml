@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ml-universe"
+version = "0.7.0"
+description = "Offline interactive machine learning laboratory with real gradients and 2D/3D charts"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26,<3", "scipy>=1.11,<2", "scikit-learn>=1.4,<2"]
+
+[project.optional-dependencies]
+desktop = ["pywebview>=5,<7"]
+build = ["pyinstaller>=6.10,<8", "pytest>=8,<10", "ruff>=0.7"]
+
+[project.scripts]
+ml-universe = "ml_universe.server:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["ml_universe*"]
+
+[tool.setuptools.package-data]
+ml_universe = ["static/*.html", "static/*.css", "static/*.js", "static/*.svg"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
