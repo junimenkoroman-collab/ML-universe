@@ -10,6 +10,8 @@
 
 ```bash
 # Из корня репозитория; требуется Python >= 3.11 и модуль venv
+python3.11 -m venv .venv
+source .venv/bin/activate
 ./scripts/run_linux.sh
 ```
 
