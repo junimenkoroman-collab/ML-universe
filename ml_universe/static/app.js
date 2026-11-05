@@ -285,26 +285,10 @@ function removeModule(id){const module=getLayout(page).modules.find(m=>m[0]===id
 function scheduleRegressionUpdate(key){clearTimeout(debounce);stopPlay();debounce=setTimeout(async()=>{try{if(GENERATORS.has(key)){await resetRegression(true)}else if(key==='w'||key==='b'){reg=await api('set',{w:cfg.w,b:cfg.b});drawRegression();}else{reg=await api('set',{[key]:cfg[key]});if(['loss','regularizer','lam','ratio','delta','quantile'].includes(key))surface=(await api('surface')).surface;drawRegression();}}catch(e){message(e.message,true)}},key==='w'||key==='b'?130:280);}
 async function resetRegression(quiet=false){try{clearTimeout(debounce);stopPlay();setBusy(true);reg=await api('init',cfg);surface=reg.surface;delete reg.surface;cfg={...cfg,...reg.config};drawRegression();if(!quiet)message('Новый эксперимент создан');}catch(e){message(e.message,true)}finally{setBusy(false)}}
 function setBusy(v){busy=v;$('#status-text').innerHTML=v?'<span class="online-dot"></span> Вычисление…':'<span class="online-dot"></span> Готово';}
-function plotTheme(){
- const light=ROOT.classList.contains('light');
- const primary=light?'#27272a':'#ececec';const grid=light?'#e9e9eb':'#414141';
- return {paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
- font:{color:light?'#66666b':'#bdbdc2',family:'Inter, system-ui, Segoe UI, Arial',size:11},
- colorway:['#0d9488','#64748b','#e09b55','#7c84a6','#5caa83','#b17889','#a39980','#818cf8'],
- xaxis:{gridcolor:grid,zerolinecolor:grid},yaxis:{gridcolor:grid,zerolinecolor:grid},
- legend:{orientation:'h',y:-.22,font:{size:10}},hovermode:'closest'};
-}
-function renderCharts(charts){const host=$('#graphs');if(!charts||!charts.length){host.innerHTML='<div class="empty-panel">Пока нет данных.</div>';return;}const key=page+'_'+charts.length;const recreate=currentKey!==key||$$('.chart-card').length!==charts.length;currentKey=key;if(recreate){host.innerHTML='';charts.forEach((c,i)=>{const card=document.createElement('div');card.className='chart-card'+(c.wide?' wide':'');card.innerHTML=`<div class="chart-head"><strong>${ESC(c.title||'Визуализация')}${!HAS_WEBGL&&c.traces.some(t=>t.type==='surface'||t.type==='scatter3d')?' · 2D контуры':''}</strong></div><div class="chart-body" id="plot-${i}"></div>`;host.appendChild(card);});}
- const theme=plotTheme();charts.forEach((c,i)=>{const original3d=c.traces.some(t=>t.type==='surface'||t.type==='scatter3d');
-  let traces=c.traces;
-  if(original3d&&!HAS_WEBGL)traces=traces.map(t=>t.type==='surface'?{type:'contour',x:t.x,y:t.y,z:t.z,colorscale:t.colorscale||'Viridis',showscale:false,opacity:t.opacity||1,ncontours:22}:t.type==='scatter3d'?{type:'scatter',x:t.x,y:t.y,mode:t.mode||'lines',name:t.name,line:t.line||{},marker:{...t.marker,size:Math.max(5,t.marker?.size||5)}}:t);
-  // Calm sequential scale for loss surfaces; preserve diverging scales for signed kernels.
-  const calm=ROOT.classList.contains('light')?[[0,'#f0f4f4'],[.5,'#9abfba'],[1,'#316b66']]:[[0,'#263a39'],[.5,'#4f817a'],[1,'#a7c8b9']];
-  traces=traces.map(t=>t.colorscale==='Viridis'?{...t,colorscale:calm}:t);
-  const target=$(`#plot-${i}`),layout={...theme,...c.layout,margin:{l:48,r:12,t:18,b:48},height:target?.clientHeight||340,autosize:true};if(layout.xaxis)layout.xaxis={...theme.xaxis,...layout.xaxis};if(layout.yaxis)layout.yaxis={...theme.yaxis,...layout.yaxis};if(original3d&&HAS_WEBGL){layout.scene={xaxis:{title:'x'},yaxis:{title:'y'},zaxis:{title:'Objective'},bgcolor:'rgba(0,0,0,0)',...layout.scene};delete layout.xaxis;delete layout.yaxis;layout.margin={l:0,r:0,t:0,b:0};}
-   // Focus on learning: only zoom and reset, without screenshot/export, lasso or 3D gimmicks.
-   const buttons=original3d&&HAS_WEBGL?['zoom3d','resetCameraDefault3d']:['zoomIn2d','zoomOut2d','resetScale2d'];
-   Plotly.react(target,traces,layout,{responsive:true,displaylogo:false,displayModeBar:'hover',scrollZoom:true,doubleClick:'reset',modeBarButtons:[buttons]}).catch(e=>message('Ошибка графика: '+e.message,true));});
+// Unified visual language. All 29 topics share this renderer, not 29 ad-hoc dashboards.
+function renderCharts(charts){
+  if(!window.MLStory)throw Error('Не загружена система визуализаций');
+  window.MLStory.render({charts,page,reg,theme:ROOT.classList.contains('light')?'light':'dark',webgl:HAS_WEBGL});
 }
 function setStats(items){let stats=Object.entries(items||{}).filter(([,v])=>typeof v==='number'||typeof v==='string');stats=stats.slice(0,8);if(!stats.length){$('#statsStrip').innerHTML='';return;}$('#statsStrip').innerHTML=stats.slice(0,4).map(([name,value])=>`<div class="stat-card"><div class="stat-label">${ESC(name.replaceAll('_',' ').toUpperCase())}</div><div class="stat-value" title="${ESC(valueLabel(value))}">${ESC(typeof value==='number'?NUM(value):value)}</div></div>`).join('');}
 function kvHtml(items){return Object.entries(items).slice(0,24).map(([k,v])=>`<div class="keyval"><span>${ESC(k.replaceAll('_',' '))}</span><strong>${ESC(valueLabel(v))}</strong></div>`).join('');}

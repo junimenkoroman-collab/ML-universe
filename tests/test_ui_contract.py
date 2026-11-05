@@ -34,9 +34,9 @@ def test_distraction_free_ui_has_no_file_controls_or_decorative_modebar():
     assert '<input type="file"' not in HTML
     assert 'saveFile(' not in JS and 'loadCsv(' not in JS
     assert 'toImageButtonOptions' not in JS
-    assert 'modeBarButtons:[buttons]' in JS
-    assert "['zoomIn2d','zoomOut2d','resetScale2d']" in JS
-    assert "['zoom3d','resetCameraDefault3d']" in JS
+    assert 'window.MLStory.render' in JS
+    assert 'visual_story.js' in HTML
+    assert 'visual_story.css' in HTML
     assert 'id="renderTime"' not in HTML
 
 
